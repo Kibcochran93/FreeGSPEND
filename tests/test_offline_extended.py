@@ -10,7 +10,21 @@ Run with: pytest tests/test_offline_extended.py   (or just `pytest`)
 
 import datetime as dt
 
-from govspend_free import alerts, contacts, contracts_scraper, db, opportunities
+from govspend_free import alerts, contacts, contracts_scraper, db, opportunities, utils
+
+
+def test_watchlist_matching_is_case_sensitive_and_word_bounded():
+    print("[test] watchlist matching (SEAtS != 'seats', competitors match) ...")
+    wl = utils.build_watchlist_matchers(["SEAtS", "SEAtS ONE", "Civitas", "Ellucian"])
+
+    # The brand must NOT match the ordinary word "seats" (the live-run bug).
+    assert utils.match_watchlist("member seats will be held by partners", wl) == []
+    # Real, correctly-cased mentions do match.
+    assert "SEAtS" in utils.match_watchlist("approved SEAtS ONE for attendance", wl)
+    assert set(utils.match_watchlist("evaluated Civitas and Ellucian Banner", wl)) == {"Civitas", "Ellucian"}
+    # Word-bounded: no partial-word hits.
+    assert utils.match_watchlist("the seatsback design", wl) == []
+    print("  OK - case-sensitive, word-bounded, no 'seats' false positive")
 
 
 class _FakeResp:

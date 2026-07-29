@@ -59,10 +59,10 @@ def scrape_board_minutes(source: dict, session, seen: set[str], matchers, watchl
             continue
 
         snippets = {}
-        for pattern in watchlist_patterns:
+        for label, pattern in watchlist_patterns:
             snip = utils.snippet_around(text, pattern)
             if snip:
-                snippets[pattern.pattern] = snip
+                snippets[label] = snip
 
         matches.append({
             "source_url": url,

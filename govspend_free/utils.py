@@ -171,12 +171,23 @@ def match_categories(text: str, matchers: list[tuple[str, str, list[re.Pattern]]
     return hits
 
 
-def build_watchlist_matchers(watchlist: Iterable[str]) -> list[re.Pattern]:
-    return [re.compile(re.escape(term), re.IGNORECASE) for term in watchlist]
+def build_watchlist_matchers(watchlist: Iterable[str]) -> list[tuple[str, re.Pattern]]:
+    """Compile watchlist terms into (label, pattern) pairs.
+
+    Matching is CASE-SENSITIVE and word-boundaried on purpose: watchlist
+    terms are brand / vendor names (SEAtS, Ellucian, Coursedog), and case
+    sensitivity is what stops the brand "SEAtS" from matching the ordinary
+    word "seats". Word boundaries stop partial-word matches. (Category
+    keywords stay loose and case-insensitive - see build_category_matchers.)
+
+    Trade-off: an ALL-CAPS mention in a heading (e.g. "ELLUCIAN") won't match.
+    Add that exact casing to the watchlist if you need to catch it.
+    """
+    return [(term, re.compile(r"\b" + re.escape(term) + r"\b")) for term in watchlist]
 
 
-def match_watchlist(text: str, patterns: list[re.Pattern]) -> list[str]:
-    return [p.pattern for p in patterns if p.search(text)]
+def match_watchlist(text: str, matchers: list[tuple[str, re.Pattern]]) -> list[str]:
+    return [label for label, pattern in matchers if pattern.search(text)]
 
 
 def snippet_around(text: str, pattern: re.Pattern, context_chars: int = 160) -> str:

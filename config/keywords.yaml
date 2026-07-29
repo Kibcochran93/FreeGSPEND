@@ -8,6 +8,7 @@ categories:
     label: "Student Success & Retention"
     keywords:
       - advising
+      - "academic advising"
       - persistence
       - retention
       - wellness
@@ -17,6 +18,7 @@ categories:
       - engagement
       - intervention
       - "student success"
+      - "student success platform"
 
   academic_space_scheduling:
     label: "Academic & Space Scheduling"
@@ -39,6 +41,10 @@ categories:
       - "title iv"
       - "compliance reporting"
       - "engagement monitoring"
+      - "last date of attendance"
+      - "roster verification"
+      - "sevis compliance"
+      - sevis
 
   ai_chatbot_messaging:
     label: "AI Chatbot & Messaging"
@@ -59,17 +65,76 @@ categories:
       - "erp assessment"
       - "enterprise resource planning"
       - "student information system"
+      - "curriculum management"
       - banner
       - "workday student"
       - colleague
       - jenzabar
       - peoplesoft
+      - ellucian
+
+  # --- Deal-trigger signals from the SEAtS GTM playbook ---------------------
+  # These are the "problems that create a deal" - accreditation timing and
+  # compliance/reporting pain - not product categories. A board-minutes doc
+  # hitting these plus a product category above is a high-fit account.
+  accreditation_effectiveness:
+    label: "Accreditation & Institutional Effectiveness"
+    keywords:
+      - accreditation
+      - reaffirmation
+      - "self-study"
+      - "self study"
+      - "site visit"
+      - "institutional effectiveness"
+      - "program review"
+      - "assurance argument"
+      - SACSCOC
+      - NWCCU
+      - WSCUC
+      - "middle states"
+
+  institutional_research_reporting:
+    label: "Institutional Research & Mandatory Reporting"
+    keywords:
+      - IPEDS
+      - "institutional research"
+      - "state reporting"
+      - "federal reporting"
+      - "mandatory reporting"
+      - "data governance"
+      - "return of title iv"
+      - "financial aid audit"
 
 # Free-text vendor / product watchlist. These terms are searched for
 # specifically in board meeting minutes text and (where scrapable)
-# transparency/vendor payment data, separate from the bid categories
-# above. Add your own competitors, target vendors, or product names.
+# transparency/vendor payment data, separate from the bid categories above.
+#
+# NOTE: watchlist matching is CASE-SENSITIVE and word-boundaried (unlike the
+# categories above), so "SEAtS" matches the brand but not the word "seats".
+# Use the real casing of each name. All-caps mentions won't match unless you
+# add that casing explicitly.
 watchlist:
+  # Your products
   - "SEAtS"
   - "SEAtS Software"
   - "SEAtS ONE"
+
+  # Student-success / retention competitors
+  - "Civitas"
+  - "Civitas Learning"
+  - "Starfish"
+  - "EAB"
+  - "Watermark"
+  - "Engage2Serve"
+  - "Anthology"
+
+  # Scheduling / space competitors
+  - "Coursedog"
+  - "Ready Education"
+  - "Unit4"
+
+  # SIS / ERP incumbents (mentions can signal a migration window)
+  - "Ellucian"
+  - "Jenzabar"
+  - "Workday Student"
+  - "PeopleSoft"
