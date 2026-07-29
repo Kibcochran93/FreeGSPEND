@@ -1,0 +1,9 @@
+# Optional. Copy to llm.yaml to enable --ask and --chat (AI Search and
+# Record-Level Chat). You can also just set the ANTHROPIC_API_KEY
+# environment variable instead of using this file - either works.
+#
+# This is the one part of the tool that costs money per use (standard
+# Anthropic API rates). Everything else (scraping, search, opportunity
+# scoring, Apollo contacts without email reveal) is free.
+
+api_key: "sk-ant-YOUR-KEY-HERE"

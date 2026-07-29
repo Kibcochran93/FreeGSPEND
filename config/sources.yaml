@@ -1,0 +1,217 @@
+# Pilot config: 10 states. Every URL below was fetched and verified during
+# research (either directly in this project's chat session, or by a research
+# agent that confirmed each page loads and matches its expected content type).
+#
+# type values, and what the scraper does with each:
+#   html_table   - real server-rendered HTML table/list -> scraped directly
+#                  with requests + BeautifulSoup.
+#   html_list    - server-rendered list of links (not a <table>) -> scraped
+#                  the same way as html_table, just less structured.
+#   pdf_list     - a page that is itself mostly a big block of real text/PDF
+#                  content (e.g. very large minutes docs) -> treated like
+#                  html_list but expect slower parsing / bigger pages.
+#   js_rendered  - confirmed to return an empty shell to a basic HTTP fetch
+#                  (Jaggaer/SciQuest, GEP SMART, Oracle Fusion, Tableau, Ariba,
+#                  AJAX search forms, etc). The scraper will SKIP these by
+#                  default and log them as "needs_browser" in the report
+#                  unless you wire in Playwright (see README).
+#   form_post    - requires session cookies / anti-CSRF tokens to query.
+#                  Skipped by default, logged as "needs_session".
+#
+# Add new states/institutions by copying a block and changing the URLs.
+
+arkansas:
+  university_systems:
+    - name: "University of Arkansas System (Fayetteville / HogBid)"
+      domain: "uark.edu"
+      bid_boards:
+        - url: "https://hogbid.uark.edu/"
+          type: html_table
+          notes: "UAF + UA System Office formal bids. Verified working."
+      board_minutes:
+        - url: "https://uasys.edu/leadership/board-of-trustees/meetings/"
+          type: html_list
+          notes: "Chronological, agenda + minutes PDF links back to 2021."
+    - name: "University of Central Arkansas"
+      domain: "uca.edu"
+      bid_boards:
+        - url: "https://uca.edu/procurement/current-bids/"
+          type: html_table
+          notes: "Verified working, includes ERP/RFP postings."
+  transparency:
+    - name: "Transparency.Arkansas.gov (statewide)"
+      url: "https://transparency.arkansas.gov/"
+      type: js_rendered
+      notes: "Vendor/contract search is AJAX-driven; page shell only via basic fetch."
+    - name: "UA System Open Checkbook"
+      url: "https://uasys.edu/system-office/open-checkbook/"
+      type: js_rendered
+      notes: "Power BI embeds, not scrapable without a browser."
+
+texas:
+  university_systems:
+    - name: "University of Texas System"
+      domain: "utsystem.edu"
+      bid_boards:
+        - url: "https://www.utsystem.edu/offices/collaborative-business-services/supply-chain-alliance/bid-opportunities"
+          type: js_rendered
+          notes: "Routes to Jaggaer/SciQuest (bids.sciquest.com), SPA, empty on fetch."
+      board_minutes:
+        - url: "https://www.utsystem.edu/board-of-regents/meetings/meetings-archive/2020-present"
+          type: html_table
+          notes: "Verified. Agenda Book + Minutes PDF + webcast links, back to 2021+."
+  transparency:
+    - name: "Texas Comptroller Transparency Dashboards"
+      url: "https://comptroller.texas.gov/transparency/open-data/dashboards.php"
+      type: js_rendered
+      notes: "Nav page static, QlikView dashboard is a JS shell."
+
+florida:
+  university_systems:
+    - name: "University of Florida"
+      domain: "ufl.edu"
+      bid_boards:
+        - url: "https://cfo.ufl.edu/procedures-training-resources/doing-business-at-uf/schedule-of-bids/"
+          type: js_rendered
+          notes: "Routes to Jaggaer/SciQuest, empty on fetch."
+      board_minutes:
+        - url: "https://trustees.ufl.edu/meetings/"
+          type: html_table
+          notes: "Verified. Static year-by-year tables, Agenda/Minutes PDFs, 2023-2026 confirmed."
+  transparency:
+    - name: "Florida Vendor/Payee Payment Search"
+      url: "https://fs.fldfs.com/dispub2/cvphsrch.htm"
+      type: form_post
+      notes: "GAP: executive-branch agencies only, does NOT include the 12 public universities (they run under flbog.edu, separate from this tool)."
+
+california:
+  university_systems:
+    - name: "University of California (Office of the President / Regents)"
+      domain: "ucop.edu"
+      bid_boards:
+        - url: "https://ucop.edu/procurement-services/for-suppliers/systemwide-rfps.html"
+          type: js_rendered
+          notes: "Routes to GEP SMART SPA, empty on fetch."
+      board_minutes:
+        - url: "https://regents.universityofcalifornia.edu/minutes-index/"
+          type: html_list
+          notes: "Verified. Static listing by year/committee, PDF links, archive to 2000."
+  transparency:
+    - name: "California FI$Cal Open Data"
+      url: "https://open.fiscal.ca.gov/"
+      type: html_table
+      notes: "BEST case of the 10 states. Static pages link to per-department/per-month CSV downloads, ~151 depts incl. UC, ~60-day lag."
+
+georgia:
+  university_systems:
+    - name: "University System of Georgia (bid postings live at institution level, e.g. UGA)"
+      domain: "uga.edu"
+      bid_boards:
+        - url: "https://bids.sciquest.com/apps/Router/PublicEvent?CustomerOrg=UGA"
+          type: js_rendered
+          notes: "Jaggaer/SciQuest SPA, empty on fetch. usg.edu/procurement/ is static but has no bid table."
+      board_minutes:
+        - url: "https://www.usg.edu/regents/meetings/"
+          type: html_table
+          notes: "Verified. Year-by-year archive, Date/Location/Agenda/Minutes columns, PDFs back to 1996."
+  transparency:
+    - name: "Open Georgia"
+      url: "https://open.ga.gov/"
+      type: html_table
+      notes: "Verified static server-rendered content, salaries/expenditure reports incl. USG institutions."
+
+ohio:
+  university_systems:
+    - name: "Kent State University"
+      domain: "kent.edu"
+      bid_boards:
+        - url: "https://www.kent.edu/procurement/bids"
+          type: html_table
+          notes: "Verified working, native HTML table (Doc/RFP#/Description/Issued/Due/Manager). Ohio State routes through external SAP Ariba instead - not included."
+      board_minutes:
+        - url: "https://www.kent.edu/bot/meetings"
+          type: html_list
+          notes: "Verified. Chronological 2010-2026, Agenda/Minutes/Summary PDFs."
+  transparency:
+    - name: "Ohio Checkbook"
+      url: "https://checkbook.ohio.gov/"
+      type: js_rendered
+      notes: "Confirmed empty shell across multiple paths tried. Client-side SPA, no data API found."
+
+north_carolina:
+  university_systems:
+    - name: "University of North Carolina System / UNC-Chapel Hill"
+      domain: "unc.edu"
+      bid_boards:
+        - url: "https://facilities.unc.edu/resources/vendor-opportunities/"
+          type: html_list
+          notes: "Verified but construction/facilities bids only. General RFPs route through evp.nc.gov (not university-hosted)."
+      board_minutes:
+        - url: "https://www.northcarolina.edu/apps/bog/index.php?mode=all"
+          type: html_table
+          notes: "Verified. Chronological table, Materials/Minutes links back to 2016 (older = public-records request)."
+  transparency:
+    - name: "NC Open Budget"
+      url: "https://www.nc.gov/government/open-budget"
+      type: html_table
+      notes: "Static hub page. Embedded SAS dashboards need JS, but 'Bulk Download Data' section has direct no-JS CSV links - use those."
+
+tennessee:
+  university_systems:
+    - name: "Tennessee Board of Regents (community colleges/TCATs - UT System's own procurement is Oracle Fusion/JS)"
+      domain: "tbr.edu"
+      bid_boards:
+        - url: "https://www.tbr.edu/purchasing/bids"
+          type: html_table
+          notes: "Verified clean Drupal tables (RFQ/RFP/RFI). Note: TBR governs 2-year schools, not the 4-year UT campuses."
+      board_minutes:
+        - url: "https://trustees.tennessee.edu/minutes/"
+          type: pdf_list
+          notes: "Page confirmed to load real content (exceeded fetch size cap - itself a sign of real data). Exact structure needs a manual spot-check."
+  transparency:
+    - name: "Transparent Tennessee Checkbook"
+      url: "https://www.tn.gov/transparenttn/finances/checkbook.html"
+      type: js_rendered
+      notes: "Wrapper page confirms it covers university systems, but data lives in an embedded Tableau view."
+
+illinois:
+  university_systems:
+    - name: "University of Illinois System"
+      domain: "uillinois.edu"
+      bid_boards:
+        - url: "https://www.procure.stateuniv.state.il.us/"
+          type: form_post
+          notes: "Real search form gated by anti-CSRF token; needs a requests.Session with cookie/token handling, not a static scrape."
+      board_minutes:
+        - url: "https://www.bot.uillinois.edu/board_meetings/minutes"
+          type: js_rendered
+          notes: "GAP: index confirmed empty/JS shell. Fallback below is the workaround."
+        - url: "https://trustees.uillinois.edu/trustees/minutes/{YEAR}/{Month}-{DD}-{YYYY}-BOT.pdf"
+          type: pdf_list
+          notes: "Direct legacy PDF URL PATTERN (not a listing page) - confirmed one real ~130,000-char doc this way. Combine with the static schedule page (bot.uillinois.edu/board_meetings/schedule) to get real dates to fill into the pattern. No clean enumerable index exists."
+  transparency:
+    - name: "Illinois Comptroller - Statewide Expenditures"
+      url: "https://illinoiscomptroller.gov/financial-reports-data/expenditures-state-spending/statewide"
+      type: js_rendered
+      notes: "Real filter controls incl. an Agency grouping for university spending, but results populate via AJAX."
+
+pennsylvania:
+  university_systems:
+    - name: "Pennsylvania State University"
+      domain: "psu.edu"
+      bid_boards:
+        - url: "https://www.opp.psu.edu/tradebid-packages"
+          type: html_table
+          notes: "Verified Drupal table (Project#/Campus/Project/Stage/Bid Date), but construction/trade bids only. General RFP/RFQ site (PSUbuy) is JS-rendered/empty."
+      board_minutes:
+        - url: "https://trustees.psu.edu/past-meetings/"
+          type: html_list
+          notes: "Verified working, 2025-forward with 'Load More' pagination."
+        - url: "https://sites.psu.edu/trustees/board-of-trustees-meetings-archive/"
+          type: html_list
+          notes: "Verified static full archive back to 2012, year-by-year."
+  transparency:
+    - name: "PennWATCH Spending"
+      url: "https://pennwatch.pa.gov/Spending/Payments"
+      type: js_rendered
+      notes: "Real search form with an Agency dropdown incl. 'System of Higher Education' (PASSHE), but results are AJAX-populated after submit."

@@ -1,0 +1,56 @@
+# Copy this file to apollo.yaml (same folder) and fill in your own Apollo.io
+# API key to enable the Contacts module. Get a key at
+# https://developer.apollo.io/#/keys (Settings > API in your Apollo account).
+#
+# apollo.yaml is read by govspend_free/contacts.py. If the file doesn't
+# exist, or `enabled: false`, the Contacts pass is skipped entirely - the
+# rest of the tool (bids, minutes, transparency, contracts) runs fine
+# without it.
+
+enabled: false
+api_key: "YOUR_APOLLO_API_KEY"
+
+# Job titles to search for at each institution's domain. Apollo matches
+# loosely (e.g. "director of procurement" also catches "procurement
+# director"), so a shorter, well-chosen list works better than an
+# exhaustive one. Tune this to who actually evaluates/buys what you sell.
+target_titles:
+  - "Vice President for Finance"
+  - "Vice Chancellor for Finance and Administration"
+  - "Chief Information Officer"
+  - "Chief Financial Officer"
+  - "Director of Procurement"
+  - "Director of Purchasing"
+  - "Registrar"
+  - "Dean of Students"
+  - "Vice President for Student Affairs"
+  - "Vice Provost for Student Success"
+
+# Optional: Apollo's seniority filter. Leave empty ([]) to not filter by
+# seniority at all. Valid values: owner, founder, c_suite, partner, vp,
+# head, director, manager, senior, entry, intern.
+target_seniorities:
+  - "director"
+  - "vp"
+  - "head"
+  - "c_suite"
+
+# How many people to pull per institution from People Search. This part is
+# free (0 Apollo credits) regardless of this number, but larger numbers
+# mean more enrichment calls below if reveal_emails is on.
+max_results_per_institution: 10
+
+# People Search does NOT return email addresses (Apollo's API design, not
+# a limitation of this script). To get emails you have to call the
+# Enrichment endpoint per person, which COSTS APOLLO CREDITS - 1 credit if
+# it finds an email, 0 if it doesn't. Phone number reveal is not
+# implemented here (it requires standing up a public webhook endpoint to
+# receive Apollo's async callback, which is out of scope for a personal
+# script - see govspend_free/apollo_client.py for where to add it if you
+# want to).
+reveal_emails: false
+
+# Hard cap on enrichment (credit-spending) calls PER RUN, regardless of
+# how many contacts were found across all institutions. Protects you from
+# accidentally burning your Apollo credit balance in one run.
+max_enrich_per_run: 20

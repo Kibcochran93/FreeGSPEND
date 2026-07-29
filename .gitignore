@@ -1,0 +1,31 @@
+# --- Secrets: real configs copied from the .example files (NEVER commit) ---
+# These hold your Apollo API key, Anthropic API key, and SMTP password.
+config/apollo.yaml
+config/llm.yaml
+config/alerts.yaml
+
+# --- Generated / local data (per-machine, not source) ---
+db/
+reports/
+state/
+cache/
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+env/
+
+# --- Editor / OS cruft ---
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# --- Local agent / harness session settings (not part of the project) ---
+.claude/

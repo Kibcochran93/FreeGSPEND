@@ -1,0 +1,296 @@
+# govspend_free
+
+A free, self-hosted stand-in for GovSpend, built around 10 pilot states
+(AR, TX, FL, CA, GA, OH, NC, TN, IL, PA). You run it yourself, on your own
+machine, on whatever schedule you want. No subscription, no vendor lock-in
+- just a Python project you own.
+
+## Which GovSpend modules this covers
+
+| GovSpend module         | Here                                                              | Cost              |
+| ------------------------ | ------------------------------------------------------------------ | ----------------- |
+| Bids & RFPs               | `bid_scraper.py` - scrapes native HTML bid boards                  | Free              |
+| Meeting Intelligence      | `board_minutes_scraper.py` - downloads + keyword-searches minutes  | Free              |
+| Spending & POs            | `transparency_scraper.py` - best-effort CSV/PDF downloads          | Free              |
+| Co-Ops & Contracts        | `contracts_scraper.py` - detects vendor/start/end date columns, flags expirations | Free |
+| Contacts                  | `contacts.py` + `apollo_client.py` - real Apollo.io People Search  | Free search, Apollo credits for email reveal |
+| Agencies                  | not built (see "What this doesn't do")                             | -                  |
+| AI Search + Notebook      | `llm.py` `--ask` - RAG over your local data via Claude              | Anthropic API rates |
+| Record-Level Chat         | `llm.py` `--chat <id>` - REPL over one document                     | Anthropic API rates |
+| Dashboard                 | `--opportunities` (terminal output; see note below)                 | Free               |
+| Alerts                    | `alerts.py` - SMTP email digest after each run                      | Free (your own email account) |
+| CRM Integration           | not built - use `reports/report_*.csv` to import into your CRM manually | Free |
+| Opportunities             | `opportunities.py` - rule-based scoring, not AI-ranked               | Free               |
+
+Everything free-tier runs with `pip install -r requirements.txt` and no
+API keys. Three modules are opt-in and require your own account/keys:
+Apollo.io (Contacts), Anthropic (AI Search/Chat), and SMTP credentials
+(Alerts). None of the free modules depend on these - skip all three and
+you still get Bids, Meeting Intelligence, Spending, Contracts, unified
+search, and rule-based Opportunities.
+
+## Install
+
+```bash
+cd govspend_free
+pip install -r requirements.txt
+```
+
+Or install it as an editable package (adds a `govspend-free` command and lets
+`import govspend_free` resolve from anywhere - handy for the tests and for
+hacking on it):
+
+```bash
+pip install -e .          # then: govspend-free --list-states
+```
+
+Install editable rather than a plain `pip install .`: the tool reads `config/`
+and writes `db/`, `reports/`, `state/`, and `cache/` relative to its own
+location, so it needs to keep running from this project folder.
+
+Requires Python 3.10+. Copy the whole project folder to a **plain local
+folder**, not a network drive or cloud-sync mount (OneDrive/Dropbox live-
+sync folders are usually fine; unusual network filesystems can break
+SQLite's file locking - see Troubleshooting below if you hit a "disk I/O
+error").
+
+## Verify it works (no network, no API keys required)
+
+The tests use `pytest`:
+
+```bash
+pip install -r requirements-dev.txt   # one-time: installs pytest
+# (or, with the editable install above:  pip install -e ".[dev]")
+pytest                                # runs both offline suites
+```
+
+This exercises bid + minutes scraping against local fixtures, plus `db.py`,
+`contracts_scraper.py` (including content-based re-scan of updated CSVs), and
+`opportunities.py` - all offline, no API keys. Re-run after any edits to
+`govspend_free/*.py`.
+
+## Run it for real
+
+```bash
+python main.py                 # scrape every configured state
+python main.py --state texas   # just one state (state key is case-insensitive)
+python main.py --list-states
+python main.py --skip-transparency --skip-contracts --skip-contacts   # pick and choose passes
+python main.py --quiet         # only warnings/errors; still prints the report + summary
+python main.py --verbose       # DEBUG-level logging
+```
+
+This writes `reports/report_<timestamp>.csv` (same as before) AND persists
+everything into `db/govspend_free.db` (SQLite), which is what makes the
+next three commands possible - they read from that accumulated history,
+not just the latest run:
+
+```bash
+python main.py --search "attendance software"     # full-text search everything ever scraped
+python main.py --opportunities                    # ranked feed, scored by recency + keyword strength
+python main.py --expirations 90                   # contracts expiring within 90 days (default 180)
+```
+
+## Contacts (Apollo.io) - GovSpend's Contacts module, for real
+
+1. Get an API key: https://developer.apollo.io/#/keys
+2. `cp config/apollo.yaml.example config/apollo.yaml`
+3. Set `enabled: true`, paste your key, tune `target_titles` to the roles
+   who'd actually evaluate/buy what you sell (procurement directors, CFOs,
+   VPs of student affairs, whatever's relevant).
+4. Next `python main.py` run will search for those people at every
+   institution that has a `domain:` field in `sources.yaml` (all 10 pilot
+   institutions have one set already).
+
+**Cost:** People Search itself is free (0 Apollo credits) - you get
+names, titles, and LinkedIn URLs at no cost. Email addresses require the
+separate Enrichment endpoint, which costs Apollo credits (1 if it finds an
+email, 0 if not). This is off by default (`reveal_emails: false` in
+apollo.yaml) - turn it on deliberately, and `max_enrich_per_run` caps how
+many credit-spending calls happen in one run so you don't burn your
+balance by accident. **Phone numbers are not implemented** - Apollo's
+phone reveal requires standing up a public webhook endpoint to receive an
+async callback, which is out of scope for a personal script (the hook
+point is documented in `apollo_client.py` if you want to add it yourself).
+
+Re-runs don't re-spend credits on people you've already enriched - contacts
+are deduped by Apollo's own person ID in the `contacts` table.
+
+## AI Search + Record-Level Chat (optional, costs money)
+
+This is the one part of the tool that isn't free - it uses your own
+Anthropic API key at standard API rates.
+
+```bash
+pip install anthropic
+cp config/llm.yaml.example config/llm.yaml   # paste your key, or just export ANTHROPIC_API_KEY
+python main.py --ask "which Texas institutions are evaluating ERP systems?"
+python main.py --search "SEAtS"    # find a document id first...
+python main.py --chat 42           # ...then chat about just that one record
+```
+
+`--ask` does retrieval-augmented generation: it full-text-searches your
+local `documents_fts` index for the top 10 matches, hands only that
+context to Claude, and asks it to answer using just those sources (with
+citations) - it does not call out to the open web or use outside
+knowledge about these institutions, unlike GovSpend's own AI Search.
+
+## Alerts (optional, free)
+
+```bash
+cp config/alerts.yaml.example config/alerts.yaml   # fill in SMTP creds, set enabled: true
+python main.py                                     # digest auto-sends after the run
+python main.py --send-alerts-only                   # re-send the most recent report without re-scraping
+```
+
+Works with any SMTP provider (Gmail example with an App Password is in
+the `.example` file).
+
+## The honest limitation: this is NOT actually nationwide (yet)
+
+10 states were piloted; every URL in `config/sources.yaml` was fetched and
+verified directly. What that pilot found:
+
+**Board meeting minutes** are the most reliable category - 9 of 10 states
+have a plain HTML/PDF listing this scraper handles natively (all except
+Illinois, which needs manual date-filling - see the `{YEAR}` placeholder
+in its config entry).
+
+**University bid boards are the weak point almost everywhere outside
+Arkansas.** Texas, Florida, California, and Georgia all route real bid
+postings through a JavaScript single-page app (Jaggaer/SciQuest or GEP
+SMART) - a basic HTTP fetch gets an empty shell, no HTML table to parse.
+These are marked `js_rendered` and skipped on purpose, showing up in your
+report as `SKIPPED:bids / needs_browser`.
+
+**Transparency portals split roughly in half.** California (FI$Cal),
+Georgia (open.ga.gov), and North Carolina's bulk-download CSVs are
+scrapable as-is (and are what the Contracts module also draws from).
+Texas, Ohio, Tennessee, Illinois, and Pennsylvania are AJAX/Tableau-driven
+and get skipped the same way. Florida's portal works but explicitly does
+**not** cover the 12 public universities (separate system, flbog.edu).
+
+**Contracts expiration detection depends entirely on the transparency
+portal actually publishing a CSV with start/end date columns** - most
+states that get skipped for Spending also get skipped for Contracts, for
+the same JS-rendered reason. Where it does work (CA/GA/NC), the column
+detection is a best-effort header-name match (`contracts_scraper.py:
+_match_columns`), so verify a sample against the source before trusting
+an expiration date for anything important.
+
+Run the tool once and read the `SKIPPED:` rows in your report - that's
+the most accurate live picture of coverage, since sites change.
+
+## Closing the JS-rendered gap (optional, more work)
+
+The `js_rendered` and `form_post` sources need a real browser, not just
+`requests`. To extend this:
+
+1. `pip install playwright && playwright install chromium`
+2. Write a `fetch_with_browser(url) -> str` helper that opens the page,
+   waits for the results table/list to render, and returns
+   `page.content()`.
+3. In `bid_scraper.py` / `transparency_scraper.py` / `contracts_scraper.py`,
+   branch on `src_type == "js_rendered"` to call that instead of
+   `utils.fetch()`, then feed the returned HTML into `BeautifulSoup` the
+   same way the rest of the code already does.
+
+Each JS platform (Jaggaer, GEP SMART, Oracle Fusion, Tableau, Ariba) will
+likely need its own wait-condition/selector tuning - not a one-size-fits-all
+fix, which is why it isn't built in by default.
+
+## Extending to more states
+
+Copy a state block in `config/sources.yaml`, add a `domain:` field for
+Apollo, and point the URLs at the new state's equivalents. Practical
+search order, based on what worked in the pilot:
+
+1. `"<university system> board of trustees meetings minutes"` - most
+   likely to be a plain scrapable page.
+2. `"<university system> procurement bid opportunities"` - check if it's
+   native (good) or redirects to `bids.sciquest.com`, `smart.gep.com`, an
+   Oracle Fusion login, or SAP Ariba (`js_rendered`, mark it and move on
+   unless you want the Playwright layer).
+3. `"<state> financial transparency" OR "<state> checkbook" OR "<state>
+   open budget"` - look specifically for a "bulk download"/"open data"/CSV
+   section, not just the interactive search box (the search box is almost
+   always AJAX; bulk-download links, when they exist, usually aren't).
+
+Always fetch and eyeball a URL before adding it - site structures change.
+
+## Editing what it looks for
+
+- `config/keywords.yaml` -> `categories` - the 5 EdTech-ish bid categories
+  (retention, scheduling, attendance/compliance, chatbot/messaging,
+  SIS/ERP). Add/remove freely.
+- `config/keywords.yaml` -> `watchlist` - free-text vendor/product names
+  searched in board minutes and transparency data (seeded with `SEAtS` /
+  `SEAtS Software` / `SEAtS ONE`). Add your own competitors/target vendors.
+- `config/apollo.yaml` -> `target_titles` / `target_seniorities` - who
+  Contacts looks for.
+
+## Troubleshooting
+
+**`sqlite3.OperationalError: disk I/O error` / `RuntimeError` on startup**
+mentioning the database - the project folder is probably on a network
+drive, FUSE mount, or unusual cloud-sync filesystem that doesn't support
+SQLite's normal file locking. Copy the whole project folder to a plain
+local folder and run it from there.
+
+**A source that worked before shows up as `SKIPPED`** - sites change
+their markup over time. Re-check the URL in a browser; if it's genuinely
+changed, update `config/sources.yaml`'s `type` field or notes accordingly.
+
+## Project layout
+
+```
+govspend_free/
+├── main.py                        # CLI entry point / orchestrator
+├── pyproject.toml                 # packaging + pytest config
+├── requirements.txt
+├── requirements-dev.txt           # pytest (test-only)
+├── config/
+│   ├── sources.yaml                # states -> institutions -> source URLs + domains
+│   ├── keywords.yaml               # bid categories + watchlist terms
+│   ├── apollo.yaml.example         # Contacts module (copy -> apollo.yaml)
+│   ├── llm.yaml.example            # AI Search/Chat (copy -> llm.yaml)
+│   └── alerts.yaml.example         # Email digest (copy -> alerts.yaml)
+├── govspend_free/
+│   ├── utils.py                    # HTTP, dedup state, keyword matching, PDF text
+│   ├── db.py                       # SQLite + FTS5 persistent store
+│   ├── bid_scraper.py
+│   ├── board_minutes_scraper.py
+│   ├── transparency_scraper.py
+│   ├── contracts_scraper.py        # expiration detection
+│   ├── apollo_client.py            # Apollo.io REST API wrapper
+│   ├── contacts.py                 # Contacts pass orchestration
+│   ├── opportunities.py            # rule-based ranking
+│   ├── llm.py                      # optional Anthropic AI Search/Chat
+│   └── alerts.py                   # optional SMTP digest
+├── tests/
+│   ├── conftest.py                 # pytest fixtures (fresh in-memory DB per test)
+│   ├── test_offline.py             # bid/minutes scraping, no network
+│   ├── test_offline_extended.py    # db/contracts/opportunities, no network
+│   └── fixtures/
+├── db/govspend_free.db             # created on first real run
+├── state/seen.json                 # created on first real run (scrape dedup)
+├── cache/pdfs/                     # downloaded minutes/transparency PDFs
+└── reports/report_<timestamp>.csv  # created on every run
+```
+
+## What this deliberately does NOT do
+
+- No Agencies module (a unified per-agency profile page) - the data is
+  implicitly there (`state`/`institution` columns everywhere), just not
+  rolled up into its own report. Would be a straightforward addition if
+  you want it: a `GROUP BY institution` query over `documents` +
+  `contracts` + `contacts`.
+- No CRM push (Salesforce/HubSpot) - `reports/report_*.csv` is your export
+  path; import it manually, or add your CRM's API client if you want
+  automatic sync.
+- No unified search box across your browser - `--search` is a
+  terminal command, not a web UI, matching the "standalone script I own"
+  choice over a hosted dashboard.
+- Doesn't handle JS-rendered sources out of the box (see above) - it
+  tells you honestly which sources it couldn't reach rather than
+  pretending coverage it doesn't have.

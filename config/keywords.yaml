@@ -1,0 +1,75 @@
+# Keyword taxonomy used to classify bid postings and to keyword-search
+# board minutes / transparency data. Edit freely - categories are just
+# labels, matching is plain case-insensitive substring/regex matching
+# (see govspend_free/utils.py: match_categories()).
+
+categories:
+  student_success_retention:
+    label: "Student Success & Retention"
+    keywords:
+      - advising
+      - persistence
+      - retention
+      - wellness
+      - "early alert"
+      - "case management"
+      - "predictive analytics"
+      - engagement
+      - intervention
+      - "student success"
+
+  academic_space_scheduling:
+    label: "Academic & Space Scheduling"
+    keywords:
+      - scheduling
+      - timetabling
+      - "course scheduling"
+      - "room scheduling"
+      - "campus scheduling"
+      - "classroom utilization"
+      - "space optimization"
+      - "space management"
+
+  attendance_compliance:
+    label: "Attendance & Compliance"
+    keywords:
+      - "attendance tracking"
+      - "attendance verification"
+      - "attendance management"
+      - "title iv"
+      - "compliance reporting"
+      - "engagement monitoring"
+
+  ai_chatbot_messaging:
+    label: "AI Chatbot & Messaging"
+    keywords:
+      - chatbot
+      - "conversational ai"
+      - "student messaging"
+      - "text messaging"
+      - sms
+      - "virtual assistant"
+      - "student communications"
+
+  sis_erp_migration:
+    label: "SIS / ERP Migration"
+    keywords:
+      - "sis migration"
+      - "erp modernization"
+      - "erp assessment"
+      - "enterprise resource planning"
+      - "student information system"
+      - banner
+      - "workday student"
+      - colleague
+      - jenzabar
+      - peoplesoft
+
+# Free-text vendor / product watchlist. These terms are searched for
+# specifically in board meeting minutes text and (where scrapable)
+# transparency/vendor payment data, separate from the bid categories
+# above. Add your own competitors, target vendors, or product names.
+watchlist:
+  - "SEAtS"
+  - "SEAtS Software"
+  - "SEAtS ONE"

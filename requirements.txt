@@ -1,0 +1,10 @@
+# Core (required for scraping, search, opportunities, contacts):
+requests>=2.31.0
+beautifulsoup4>=4.12.0
+PyYAML>=6.0
+pdfplumber>=0.10.0
+python-dateutil>=2.8.2
+lxml>=4.9.0
+
+# Optional (only needed if you enable --ask / --chat in config/llm.yaml):
+# anthropic>=0.40.0

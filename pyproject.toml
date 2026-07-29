@@ -1,0 +1,42 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "govspend-free"
+version = "0.1.0"
+description = "A free, self-hosted stand-in for GovSpend's core modules across 10 pilot states."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "requests>=2.31.0",
+    "beautifulsoup4>=4.12.0",
+    "PyYAML>=6.0",
+    "pdfplumber>=0.10.0",
+    "python-dateutil>=2.8.2",
+    "lxml>=4.9.0",
+]
+
+[project.optional-dependencies]
+# Test-only. Install with:  pip install -e ".[dev]"
+dev = ["pytest>=7.0"]
+# The optional AI Search/Chat layer (--ask / --chat). Install with:
+#   pip install -e ".[llm]"
+llm = ["anthropic>=0.40.0"]
+
+[project.scripts]
+# Console entry point. Because the tool reads config/ and writes db/, reports/,
+# etc. relative to its own location, install it EDITABLE (`pip install -e .`)
+# so those paths still resolve to this project folder.
+govspend-free = "main:main"
+
+[tool.setuptools]
+# main.py lives at the repo root (top-level module), the rest is the package.
+packages = ["govspend_free"]
+py-modules = ["main"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# Put the repo root on sys.path during test runs, so tests import
+# `govspend_free` / `main` without needing an install or sys.path shims.
+pythonpath = ["."]
