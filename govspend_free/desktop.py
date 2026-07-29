@@ -270,7 +270,7 @@ HTML = r"""
   }
   .status { margin-top: 10px; font-size: 13px; }
   .status.ok { color: #15803d; } .status.err { color: var(--soon); }
-  .hidden { display: none; }
+  .hidden { display: none !important; }  /* must beat .overlay's display:flex */
   button.briefbtn {
     padding: 4px 10px; border: 1px solid var(--accent); background: #fff; color: var(--accent);
     border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; white-space: nowrap;
