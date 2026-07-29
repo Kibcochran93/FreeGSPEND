@@ -181,6 +181,20 @@ def test_brief_auth_error_detection():
     assert not brief._looks_like_auth_error("normal model output about retention")
 
 
+def test_api_start_brief_guards(monkeypatch):
+    # Both guard paths return before any thread/claude call, so this is safe
+    # to run headlessly.
+    api = desktop.Api()
+    monkeypatch.setattr(desktop.brief, "claude_available", lambda: False)
+    r = api.start_brief("1")
+    assert r["started"] is False and "claude" in r["error"].lower()
+
+    monkeypatch.setattr(desktop.brief, "claude_available", lambda: True)
+    api._briefing = True  # simulate a brief already in flight
+    r2 = api.start_brief("1")
+    assert r2["started"] is False
+
+
 def test_api_list_states_reads_config():
     # No DB needed - reads config/sources.yaml. Confirms the 10 pilot states.
     states = desktop.Api().list_states()

@@ -61,6 +61,7 @@ def rank_opportunities(conn, limit: int = 50) -> list[dict]:
             continue
         scored.append({
             "score": score,
+            "id": row["id"],
             "doc_type": row["doc_type"],
             "state": row["state"],
             "institution": row["institution"],

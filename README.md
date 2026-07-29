@@ -125,7 +125,7 @@ govspend-free-ui           # (or: python -m govspend_free.desktop)
 
 It opens a window with four tabs:
 
-- **Opportunities** - the ranked feed (same scoring as `--opportunities`), click a title to open it.
+- **Opportunities** - the ranked feed (same scoring as `--opportunities`), click a title to open it. Each row has a **Brief** button that generates an account brief for that document (see "Account briefs" below).
 - **Search** - full-text search over everything ever scraped (same index as `--search`).
 - **Expirations** - contracts expiring within N days, with the soon-to-expire ones flagged.
 - **Scrape** - pick a state (or all), toggle which passes to run, hit **Run scrape**, and watch the log stream live. When it finishes, the Opportunities tab refreshes automatically.
@@ -137,6 +137,27 @@ On **Windows** this uses the built-in Edge WebView2 runtime, which ships with
 Windows 11 - no extra install. (On macOS/Linux, pywebview uses the system
 WebKit/GTK webview.) It's all local: the window talks straight to Python and
 the SQLite DB, and the only network access is the scrapes you trigger yourself.
+
+## Account briefs (`--brief`)
+
+Turn a scraped board-minutes document into a structured sales brief - Why now,
+top pain points (with evidence), buying committee, competitor/incumbent stack,
+deal window, objection map - synthesized against your own GTM playbook.
+
+```bash
+cp config/gtm_profile.md.example config/gtm_profile.md   # fill in your positioning
+python main.py --brief 17                                # by scraped document id
+python main.py --brief "University of Arkansas System"   # by institution name
+```
+
+Or click the **Brief** button on any Opportunities row in the desktop UI.
+
+This runs through the local **`claude` CLI** (Claude Code), so it uses your
+existing Claude login - no separate Anthropic API key, and it isn't billed at
+metered API rates. One-time setup: run `claude login` in a normal terminal so
+the CLI has valid credentials. Briefs are written to `reports/briefs/`
+(gitignored). `config/gtm_profile.md` is your own strategy and is gitignored
+too - only the `.example` template is committed.
 
 ## Contacts (Apollo.io) - GovSpend's Contacts module, for real
 

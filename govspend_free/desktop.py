@@ -26,7 +26,7 @@ from pathlib import Path
 
 import yaml
 
-from . import db, opportunities, pipeline, utils
+from . import brief, db, opportunities, pipeline, utils
 from .utils import log
 
 CONFIG_DIR = utils.ROOT_DIR / "config"
@@ -45,6 +45,7 @@ class Api:
     def __init__(self) -> None:
         self._window = None
         self._scraping = False
+        self._briefing = False
 
     def set_window(self, window) -> None:
         self._window = window
@@ -128,6 +129,42 @@ class Api:
         finally:
             pkg_logger.removeHandler(handler)
             self._scraping = False
+
+    # --------------------------- account brief ---------------------------
+
+    def start_brief(self, target: str) -> dict:
+        if self._briefing:
+            return {"started": False, "error": "A brief is already being generated."}
+        if not brief.claude_available():
+            return {"started": False, "error": (
+                "The `claude` CLI wasn't found on PATH. Install Claude Code to generate briefs."
+            )}
+        self._briefing = True
+        threading.Thread(target=self._brief_worker, args=(str(target),), daemon=True).start()
+        return {"started": True}
+
+    def _brief_worker(self, target: str) -> None:
+        handler = _WebviewLogHandler(self._window)
+        handler.setFormatter(logging.Formatter("%(message)s"))
+        pkg_logger = logging.getLogger("govspend_free")
+        pkg_logger.addHandler(handler)
+        try:
+            conn = db.get_conn()
+            try:
+                result = brief.generate_brief(conn, target)
+            finally:
+                conn.close()
+            self._emit("briefDone", {
+                "institution": result["institution"],
+                "markdown": result["markdown"],
+                "path": result["path"],
+            })
+        except Exception as exc:
+            log.error("Brief failed: %s", exc)
+            self._emit("briefError", {"error": str(exc)})
+        finally:
+            pkg_logger.removeHandler(handler)
+            self._briefing = False
 
     def _emit(self, event: str, payload: dict) -> None:
         if self._window is not None:
@@ -234,6 +271,31 @@ HTML = r"""
   .status { margin-top: 10px; font-size: 13px; }
   .status.ok { color: #15803d; } .status.err { color: var(--soon); }
   .hidden { display: none; }
+  button.briefbtn {
+    padding: 4px 10px; border: 1px solid var(--accent); background: #fff; color: var(--accent);
+    border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; white-space: nowrap;
+  }
+  button.briefbtn:hover { background: var(--accent); color: #fff; }
+  button.briefbtn:disabled { opacity: .5; cursor: default; }
+  .overlay {
+    position: fixed; inset: 0; background: rgba(15,23,42,.55);
+    display: flex; align-items: center; justify-content: center; padding: 24px; z-index: 50;
+  }
+  .modal {
+    background: var(--panel); border-radius: 12px; width: min(860px, 100%); max-height: 88vh;
+    display: flex; flex-direction: column; padding: 16px 18px; box-shadow: 0 12px 40px rgba(0,0,0,.3);
+  }
+  .modal-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  button.ghost {
+    padding: 5px 12px; border: 1px solid var(--line); background: #fff; color: var(--fg);
+    border-radius: 6px; font-size: 12px; cursor: pointer;
+  }
+  button.ghost:hover { background: #f1f5f9; }
+  .brief-body {
+    flex: 1; overflow: auto; white-space: pre-wrap; word-break: break-word; margin: 8px 0;
+    background: #f8fafc; border: 1px solid var(--line); border-radius: 8px; padding: 14px;
+    font: 13px/1.6 -apple-system, "Segoe UI", sans-serif;
+  }
 </style>
 </head>
 <body>
@@ -310,6 +372,21 @@ HTML = r"""
     </section>
   </main>
 
+  <!-- Account-brief modal -->
+  <div id="briefOverlay" class="overlay hidden">
+    <div class="modal">
+      <div class="modal-head">
+        <strong id="briefTitle">Account brief</strong>
+        <span class="spacer" style="flex:1"></span>
+        <button class="ghost" id="briefCopyBtn" onclick="copyBrief()">Copy</button>
+        <button class="ghost" onclick="closeBrief()">Close</button>
+      </div>
+      <div id="briefStatus" class="status"></div>
+      <pre id="briefBody" class="brief-body"></pre>
+      <div id="briefPath" class="hint"></div>
+    </div>
+  </div>
+
 <script>
   const api = () => window.pywebview.api;
   const el = (id) => document.getElementById(id);
@@ -357,7 +434,7 @@ HTML = r"""
   // ---- Opportunities ----
   async function loadOpps() {
     const rows = await api().opportunities(100);
-    renderTable('oppsTable', ['Score', 'Type', 'State / Institution', 'Title', 'Tags'], rows, (r) => {
+    renderTable('oppsTable', ['Score', 'Type', 'State / Institution', 'Title', 'Tags', ''], rows, (r) => {
       const tr = document.createElement('tr');
       const s = td(r.score); s.className = 'score';
       tr.appendChild(s);
@@ -367,6 +444,11 @@ HTML = r"""
       const tags = document.createElement('span');
       tags.appendChild(chips(r.categories)); tags.appendChild(chips(r.watchlist_hits));
       tr.appendChild(td(tags));
+      const btn = document.createElement('button');
+      btn.className = 'briefbtn'; btn.textContent = 'Brief';
+      btn.title = 'Generate an account brief from this document';
+      btn.onclick = () => startBrief(r.id, r.institution || `doc ${r.id}`);
+      tr.appendChild(td(btn));
       return tr;
     });
   }
@@ -425,8 +507,44 @@ HTML = r"""
       el('scrapeStatus').className = 'status err';
       el('scrapeStatus').textContent = 'Error: ' + payload.error;
       el('runBtn').disabled = false;
+    } else if (event === 'briefDone') {
+      el('briefStatus').className = 'status ok';
+      el('briefStatus').textContent = 'Brief ready for ' + payload.institution + '.';
+      el('briefBody').textContent = payload.markdown;
+      el('briefPath').textContent = payload.path ? ('Saved to: ' + payload.path) : '';
+      briefEnableButtons(true);
+    } else if (event === 'briefError') {
+      el('briefStatus').className = 'status err';
+      el('briefStatus').textContent = 'Error: ' + payload.error;
+      briefEnableButtons(true);
     }
   };
+
+  // ---- Account brief ----
+  function briefEnableButtons(on) {
+    document.querySelectorAll('button.briefbtn').forEach(b => b.disabled = !on);
+  }
+  function openBrief() { el('briefOverlay').classList.remove('hidden'); }
+  function closeBrief() { el('briefOverlay').classList.add('hidden'); }
+  function copyBrief() {
+    const t = el('briefBody').textContent || '';
+    if (navigator.clipboard) navigator.clipboard.writeText(t);
+  }
+  async function startBrief(id, label) {
+    openBrief();
+    el('briefTitle').textContent = 'Account brief: ' + label;
+    el('briefStatus').className = 'status';
+    el('briefStatus').textContent = 'Generating via claude - this can take up to a couple of minutes...';
+    el('briefBody').textContent = '';
+    el('briefPath').textContent = '';
+    briefEnableButtons(false);
+    const res = await api().start_brief(String(id));
+    if (!res.started) {
+      el('briefStatus').className = 'status err';
+      el('briefStatus').textContent = res.error || 'Could not start.';
+      briefEnableButtons(true);
+    }
+  }
   async function runScrape() {
     el('runBtn').disabled = true;
     el('scrapeStatus').className = 'status';
