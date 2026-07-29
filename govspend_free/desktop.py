@@ -417,7 +417,8 @@ HTML = r"""
       el('scrapeStatus').textContent =
         `Done - ${c.bids} bids, ${c.minutes} minutes, ${c.transparency} transparency, ` +
         `${c.contracts} contracts (${c.contracts_expiring_soon} expiring soon), ${c.contacts} contacts, ` +
-        `${c.skipped} sources skipped.` + (c.report_path ? ` Report: ${c.report_path}` : '');
+        `${c.skipped} sources skipped.` +
+        (c.reports ? ` ${c.reports} report file(s) in ${c.reports_dir}` : '');
       el('runBtn').disabled = false;
       loadOpps();  // refresh the dashboard with anything new
     } else if (event === 'scrapeError') {

@@ -35,6 +35,7 @@ from __future__ import annotations
 
 import argparse
 import datetime as dt
+import re
 import sys
 from pathlib import Path
 
@@ -161,19 +162,35 @@ def main():
     if not digest_sent:
         log.info("(Email digest not sent - see config/alerts.yaml.example to enable it.)")
 
-    db_dir = report_path.parent.parent / "db" if (report_path := result.report_path) else utils.ROOT_DIR / "db"
-    print(f"\nTip: run `python main.py --opportunities` to see everything ranked, "
-          f"or `python main.py --search \"term\"` to query what's in {db_dir}.")
+    if result.report_paths:
+        print(f"\n{len(result.report_paths)} report file(s) written under {utils.REPORTS_DIR}"
+              f" (one per type/state).")
+    print(f"Tip: run `python main.py --opportunities` to see everything ranked, "
+          f"or `python main.py --search \"term\"` to query what's in {utils.ROOT_DIR / 'db'}.")
 
 
 def _resend_last_report_digest():
-    reports = sorted(utils.REPORTS_DIR.glob("report_*.csv"))
-    if not reports:
+    # Reports are now split into reports/<type>/<type>_<state>_<timestamp>.csv.
+    # Re-send the most recent *run* - i.e. every file sharing the newest
+    # timestamp - concatenated into one digest body.
+    report_files = sorted(utils.REPORTS_DIR.glob("*/*.csv"))
+    if not report_files:
         print("No reports found yet - run a scrape first.")
         return
-    latest = reports[-1]
-    body = f"Re-sending most recent report: {latest.name}\n\n" + latest.read_text(encoding="utf-8")[:20000]
-    sent = alerts.send_digest(subject=f"govspend_free digest (resend) - {latest.name}", body_text=body)
+
+    def timestamp_of(path: Path) -> str:
+        m = re.search(r"_(\d{4}-\d{2}-\d{2}_\d{6})\.csv$", path.name)
+        return m.group(1) if m else ""
+
+    latest_ts = max((timestamp_of(p) for p in report_files), default="")
+    run_files = [p for p in report_files if timestamp_of(p) == latest_ts] or [report_files[-1]]
+
+    parts = [f"Re-sending most recent report run ({latest_ts}), {len(run_files)} file(s):\n"]
+    for p in run_files:
+        parts.append(f"\n=== {p.parent.name}/{p.name} ===\n" + p.read_text(encoding="utf-8"))
+    body = "".join(parts)[:20000]
+
+    sent = alerts.send_digest(subject=f"govspend_free digest (resend) - {latest_ts}", body_text=body)
     if not sent:
         print("Could not send - check config/alerts.yaml.")
 

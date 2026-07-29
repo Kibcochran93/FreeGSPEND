@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import csv
 import datetime as dt
+import re
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -36,7 +37,7 @@ class ScrapeResult:
     contracts: list = field(default_factory=list)
     contacts: list = field(default_factory=list)
     skipped: list = field(default_factory=list)
-    report_path: Path | None = None
+    report_paths: list[Path] = field(default_factory=list)
 
     def counts(self) -> dict:
         """Flat, JSON-serializable summary for a UI or a console line."""
@@ -48,7 +49,8 @@ class ScrapeResult:
             "contracts_expiring_soon": sum(1 for c in self.contracts if c.get("expiring_soon")),
             "contacts": len(self.contacts),
             "skipped": len(self.skipped),
-            "report_path": str(self.report_path) if self.report_path else None,
+            "reports": len(self.report_paths),
+            "reports_dir": str(utils.REPORTS_DIR),
         }
 
 
@@ -170,46 +172,94 @@ def run_scrape(
 
     utils.save_seen(seen)
     if write_report:
-        result.report_path = write_report_csv(result)
+        result.report_paths = write_reports(result)
     return result
 
 
-def write_report_csv(result: ScrapeResult) -> Path:
-    """Write the per-run CSV report (same format the CLI has always produced)."""
+# Each type label -> (subfolder/file prefix, CSV header, row builder). Splitting
+# by type gives every category its own columns instead of one generic schema.
+_REPORT_SPECS = {
+    "bids": (
+        ["state", "institution", "categories", "title", "url", "date", "description"],
+        lambda m: [m["state"], m["institution"], "; ".join(m["categories"]), m["title"],
+                   m.get("detail_url") or m["source_url"], m.get("date", ""), m.get("description", "")],
+    ),
+    "board_minutes": (
+        ["state", "institution", "categories_and_watchlist", "document_title", "document_url", "snippets"],
+        lambda m: [m["state"], m["institution"], "; ".join(m["categories"] + m.get("watchlist_hits", [])),
+                   m["document_title"], m["document_url"],
+                   " | ".join(f"{k}: {v}" for k, v in m.get("snippets", {}).items())],
+    ),
+    "transparency": (
+        ["state", "institution", "watchlist_hits", "file_url", "matched_row"],
+        lambda m: [m["state"], m["institution"], "; ".join(m.get("watchlist_hits", [])),
+                   m.get("file_url", ""), m.get("row", "")],
+    ),
+    "contracts": (
+        ["state", "institution", "vendor", "start_date", "end_date", "value",
+         "days_until_expiration", "expiring_soon", "source_url"],
+        lambda c: [c["state"], c["institution"], c["vendor"], c["start_date"], c["end_date"], c["value"],
+                   c.get("days_until_expiration", ""), "yes" if c.get("expiring_soon") else "", c["source_url"]],
+    ),
+    "contacts": (
+        ["state", "institution", "name", "title", "email", "linkedin_url"],
+        lambda c: [c["state"], c["institution"], c["name"], c.get("title", ""),
+                   c.get("email") or "", c.get("linkedin_url") or ""],
+    ),
+    "skipped": (
+        ["pass_type", "state", "institution", "reason", "url", "notes"],
+        lambda s: [s.get("pass_type", ""), s.get("state", ""), s.get("institution", ""),
+                   s.get("reason", ""), s.get("url", ""), s.get("notes", "")],
+    ),
+}
+
+
+def _slug(value: str) -> str:
+    """Filesystem-safe token for a state key (e.g. 'North Carolina' -> 'north_carolina')."""
+    return re.sub(r"[^A-Za-z0-9]+", "_", (value or "unknown").strip()).strip("_").lower() or "unknown"
+
+
+def write_reports(result: ScrapeResult) -> list[Path]:
+    """Write per-type, per-state CSVs under reports/<type>/<type>_<state>_<ts>.csv.
+
+    One timestamp is shared across every file in the run. Only non-empty
+    (type, state) groups produce a file, so you don't get a litter of empty
+    CSVs for passes that found nothing.
+    """
     timestamp = dt.datetime.now().strftime("%Y-%m-%d_%H%M%S")
-    report_path = utils.REPORTS_DIR / f"report_{timestamp}.csv"
+    written: list[Path] = []
 
-    with report_path.open("w", newline="", encoding="utf-8") as f:
-        writer = csv.writer(f)
-        writer.writerow(["pass_type", "state", "institution", "categories/watchlist_hits/tags",
-                         "title_or_name", "url_or_email", "detail"])
+    by_type = {
+        "bids": result.bids,
+        "board_minutes": result.minutes,
+        "transparency": result.transparency,
+        "contracts": result.contracts,
+        "contacts": result.contacts,
+        "skipped": result.skipped,
+    }
 
-        for m in result.bids:
-            writer.writerow(["bid", m["state"], m["institution"], "; ".join(m["categories"]),
-                             m["title"], m.get("detail_url") or m["source_url"], m.get("description", "")])
+    for type_label, items in by_type.items():
+        if not items:
+            continue
+        header, row_fn = _REPORT_SPECS[type_label]
 
-        for m in result.minutes:
-            cats = "; ".join(m["categories"] + m.get("watchlist_hits", []))
-            snippet_text = " | ".join(f"{k}: {v}" for k, v in m.get("snippets", {}).items())
-            writer.writerow(["board_minutes", m["state"], m["institution"], cats,
-                             m["document_title"], m["document_url"], snippet_text])
+        # Group this type's rows by state so each state gets its own file.
+        by_state: dict[str, list] = {}
+        for item in items:
+            by_state.setdefault(item.get("state", ""), []).append(item)
 
-        for m in result.transparency:
-            writer.writerow(["transparency", m["state"], m["institution"], "; ".join(m.get("watchlist_hits", [])),
-                             m.get("file_url", ""), m.get("file_url", ""), m.get("row", "")])
+        folder = utils.REPORTS_DIR / type_label
+        folder.mkdir(parents=True, exist_ok=True)
+        for state_key, state_items in by_state.items():
+            path = folder / f"{type_label}_{_slug(state_key)}_{timestamp}.csv"
+            with path.open("w", newline="", encoding="utf-8") as f:
+                writer = csv.writer(f)
+                writer.writerow(header)
+                for item in state_items:
+                    writer.writerow(row_fn(item))
+            written.append(path)
+            log.info("  wrote %s (%d rows)", path, len(state_items))
 
-        for c in result.contracts:
-            tag = "EXPIRING_SOON" if c.get("expiring_soon") else ""
-            writer.writerow(["contract", c["state"], c["institution"], tag,
-                             c["vendor"], c["end_date"], f"start={c['start_date']} value={c['value']}"])
-
-        for c in result.contacts:
-            writer.writerow(["contact", c["state"], c["institution"], c.get("title", ""),
-                             c["name"], c.get("email") or c.get("linkedin_url", ""), ""])
-
-        for s in result.skipped:
-            writer.writerow([f"SKIPPED:{s.get('pass_type', '')}", s.get("state", ""), s.get("institution", ""),
-                             s.get("reason", ""), "", s.get("url", ""), s.get("notes", "")])
-
-    log.info("\nReport written to: %s", report_path)
-    return report_path
+    if not written:
+        log.info("  (no report files written - nothing new this run)")
+    return written
