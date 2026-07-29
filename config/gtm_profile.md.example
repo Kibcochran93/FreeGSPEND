@@ -1,0 +1,34 @@
+# GTM Profile: <Your Company>
+
+Copy this file to `config/gtm_profile.md` and fill it in with your own
+go-to-market positioning. The account-brief generator (`--brief`) feeds it to
+Claude as context when it reads a scraped board-minutes document, so the brief
+reflects how *you* qualify and pitch. This is your own strategy, not scraped
+data - `config/gtm_profile.md` is gitignored so it never gets committed.
+
+## Company overview
+One paragraph: what you build, for whom, and your traction.
+
+## What we sell
+Your products/modules and what each does.
+
+## Platform & security posture
+Hosting, certifications, key integrations - anything that shortens a security
+review or is a differentiator in certain accounts.
+
+## Who we sell to
+Primary/secondary markets, and the buyer roles that are real entry points
+(vs. who merely validates).
+
+## Problems that create a deal
+The concrete trigger situations that mean a prospect needs you now.
+
+## Positioning against the competitor set
+Group competitors by category and give the one-line reframe for each.
+
+## Signals worth scoring high
+Observable events that indicate a hot account (leadership changes, audits,
+budget/program moves, new programs, tech standardization, relevant open roles).
+
+## Deprioritize or disqualify
+Who to skip, and who to deprioritize unless a specific pain is present.

@@ -3,6 +3,7 @@
 config/apollo.yaml
 config/llm.yaml
 config/alerts.yaml
+config/gtm_profile.md
 
 # --- Generated / local data (per-machine, not source) ---
 db/

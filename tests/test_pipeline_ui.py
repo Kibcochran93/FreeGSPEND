@@ -17,7 +17,7 @@ from pathlib import Path
 
 import pytest
 
-from govspend_free import db, desktop, pipeline, utils
+from govspend_free import brief, db, desktop, pipeline, utils
 
 
 # --------------------------- pipeline.run_scrape ---------------------------
@@ -151,6 +151,34 @@ def test_api_expirations(api_on_seeded_db):
     assert exps and exps[0]["vendor"] == "Acme Software"
     json.dumps(exps)
     assert api_on_seeded_db.expirations(30) == []  # 120 days out, outside window
+
+
+def test_brief_context_gathering(tmp_conn):
+    # Exercises the DB-side of --brief (context assembly + input validation)
+    # without invoking the `claude` CLI.
+    db.insert_document(
+        tmp_conn, doc_type="board_minutes", state="oregon",
+        institution="Lane Community College", title="July 1 Board Minutes",
+        url="http://example.test/lcc", text="retention 50-55% NWCCU accreditation reporting collapse",
+    )
+    inst, ctx, sources = brief._gather_context(tmp_conn, "Lane")
+    assert inst == "Lane Community College"
+    assert "NWCCU" in ctx and "DOCUMENT" in ctx
+    assert sources and sources[0]["url"] == "http://example.test/lcc"
+
+    inst_by_id, _, _ = brief._gather_context(tmp_conn, "1")
+    assert inst_by_id == "Lane Community College"
+
+    with pytest.raises(ValueError):
+        brief._gather_context(tmp_conn, "no-such-institution")
+    with pytest.raises(ValueError):
+        brief._gather_context(tmp_conn, "9999")
+
+
+def test_brief_auth_error_detection():
+    assert brief._looks_like_auth_error('{"error":{"type":"authentication_error"}}')
+    assert brief._looks_like_auth_error("OAuth access token is invalid.")
+    assert not brief._looks_like_auth_error("normal model output about retention")
 
 
 def test_api_list_states_reads_config():

@@ -43,6 +43,7 @@ import yaml
 
 from govspend_free import (
     alerts,
+    brief,
     db,
     llm,
     opportunities,
@@ -77,6 +78,7 @@ def parse_args():
                     help="Print contracts expiring within DAYS (default 180), then exit")
     p.add_argument("--ask", metavar="QUESTION", help="AI Search: ask a natural-language question over your local data (needs Anthropic API key)")
     p.add_argument("--chat", type=int, metavar="DOC_ID", help="Record-Level Chat REPL for one document id (needs Anthropic API key)")
+    p.add_argument("--brief", metavar="DOC_ID_OR_INSTITUTION", help="Generate a SEAtS account brief for a scraped doc id or institution name (uses the local `claude` CLI, your Claude login)")
     p.add_argument("--send-alerts-only", action="store_true", help="Send an email digest of the most recent report.csv, without scraping again")
 
     p.add_argument("-q", "--quiet", action="store_true", help="Only log warnings/errors; still prints results (report path, summary, search output)")
@@ -130,6 +132,17 @@ def main():
 
     if args.chat is not None:
         llm.chat_with_record(args.chat, conn)
+        return
+
+    if args.brief:
+        try:
+            result = brief.generate_brief(conn, args.brief)
+        except (ValueError, RuntimeError) as exc:
+            log.error("%s", exc)
+            sys.exit(1)
+        print("\n" + result["markdown"])
+        if result["path"]:
+            print(f"\n(brief saved to {result['path']})")
         return
 
     if args.send_alerts_only:
