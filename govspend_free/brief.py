@@ -26,7 +26,10 @@ from .utils import log
 
 GTM_PROFILE_PATH = utils.ROOT_DIR / "config" / "gtm_profile.md"
 BRIEFS_DIR = utils.REPORTS_DIR / "briefs"
-DEFAULT_MODEL = "sonnet"
+# None => let the `claude` CLI use the account's default model. (Forcing an
+# alias like "sonnet" can 404 if that specific model isn't on the account's
+# plan, so we don't pass --model unless the caller asks for one.)
+DEFAULT_MODEL = None
 MAX_CONTEXT_CHARS = 14000  # keep the prompt well under the CLI arg limit
 CLAUDE_TIMEOUT = 180  # seconds; a real brief returns well under this
 
@@ -79,8 +82,13 @@ def _gather_context(conn, target: str) -> tuple[str, str, list[dict]]:
         docs = [row]
     else:
         institution = target
+        # Prioritize the highest-signal documents (most category/watchlist
+        # matches) so the limited context budget is spent on the minutes that
+        # actually mention retention/accreditation/etc., not administrative
+        # agendas that happened to be scraped most recently.
         docs = conn.execute(
-            "SELECT * FROM documents WHERE institution LIKE ? ORDER BY scraped_at DESC",
+            "SELECT * FROM documents WHERE institution LIKE ? "
+            "ORDER BY (LENGTH(categories) + LENGTH(watchlist_hits)) DESC, scraped_at DESC",
             (f"%{target}%",),
         ).fetchall()
         if not docs:
@@ -120,7 +128,7 @@ def _gather_context(conn, target: str) -> tuple[str, str, list[dict]]:
     return institution, "".join(parts), sources
 
 
-def generate_brief(conn, target: str, *, model: str = DEFAULT_MODEL, write: bool = True) -> dict:
+def generate_brief(conn, target: str, *, model: str | None = DEFAULT_MODEL, write: bool = True) -> dict:
     """Generate an account brief for a doc id or institution via the `claude`
     CLI. Returns {institution, markdown, path, sources}. Raises ValueError for
     bad input and RuntimeError if the CLI is missing or the call fails."""
@@ -143,12 +151,13 @@ def generate_brief(conn, target: str, *, model: str = DEFAULT_MODEL, write: bool
     cmd = [
         "claude", "-p", prompt,
         "--output-format", "text",
-        "--model", model,
         "--append-system-prompt", SYSTEM_PROMPT,
         "--strict-mcp-config",  # ignore global MCP connectors: faster, and a
                                 # pure text call doesn't need them
     ]
-    log.info("Generating brief for %s via claude (model=%s)...", institution, model)
+    if model:  # None => use the account's default model
+        cmd += ["--model", model]
+    log.info("Generating brief for %s via claude (model=%s)...", institution, model or "account default")
     try:
         proc = subprocess.run(
             cmd,
