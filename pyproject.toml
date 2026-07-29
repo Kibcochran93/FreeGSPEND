@@ -23,12 +23,16 @@ dev = ["pytest>=7.0"]
 # The optional AI Search/Chat layer (--ask / --chat). Install with:
 #   pip install -e ".[llm]"
 llm = ["anthropic>=0.40.0"]
+# The desktop UI. Install with:  pip install -e ".[ui]"
+# On Windows this uses the built-in Edge WebView2 runtime (present on Win11).
+ui = ["pywebview>=4.4"]
 
 [project.scripts]
-# Console entry point. Because the tool reads config/ and writes db/, reports/,
+# Console entry points. Because the tool reads config/ and writes db/, reports/,
 # etc. relative to its own location, install it EDITABLE (`pip install -e .`)
 # so those paths still resolve to this project folder.
 govspend-free = "main:main"
+govspend-free-ui = "govspend_free.desktop:main"
 
 [tool.setuptools]
 # main.py lives at the repo root (top-level module), the rest is the package.

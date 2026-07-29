@@ -17,7 +17,7 @@ machine, on whatever schedule you want. No subscription, no vendor lock-in
 | Agencies                  | not built (see "What this doesn't do")                             | -                  |
 | AI Search + Notebook      | `llm.py` `--ask` - RAG over your local data via Claude              | Anthropic API rates |
 | Record-Level Chat         | `llm.py` `--chat <id>` - REPL over one document                     | Anthropic API rates |
-| Dashboard                 | `--opportunities` (terminal output; see note below)                 | Free               |
+| Dashboard                 | `--opportunities` (terminal) **or** the desktop UI (`govspend-free-ui`) | Free           |
 | Alerts                    | `alerts.py` - SMTP email digest after each run                      | Free (your own email account) |
 | CRM Integration           | not built - use `reports/report_*.csv` to import into your CRM manually | Free |
 | Opportunities             | `opportunities.py` - rule-based scoring, not AI-ranked               | Free               |
@@ -90,6 +90,32 @@ python main.py --search "attendance software"     # full-text search everything 
 python main.py --opportunities                    # ranked feed, scored by recency + keyword strength
 python main.py --expirations 90                   # contracts expiring within 90 days (default 180)
 ```
+
+## Desktop UI (dashboard + scraping)
+
+Prefer clicking to typing? There's a small native desktop app - a searchable,
+ranked dashboard over everything you've scraped, plus a button to kick off a
+new scrape with live progress.
+
+```bash
+pip install -e ".[ui]"     # installs pywebview
+govspend-free-ui           # (or: python -m govspend_free.desktop)
+```
+
+It opens a window with four tabs:
+
+- **Opportunities** - the ranked feed (same scoring as `--opportunities`), click a title to open it.
+- **Search** - full-text search over everything ever scraped (same index as `--search`).
+- **Expirations** - contracts expiring within N days, with the soon-to-expire ones flagged.
+- **Scrape** - pick a state (or all), toggle which passes to run, hit **Run scrape**, and watch the log stream live. When it finishes, the Opportunities tab refreshes automatically.
+
+Apollo contacts are **off by default** in the UI (they cost credits) - tick
+"include Apollo contacts" to opt in, and only if `config/apollo.yaml` is set up.
+
+On **Windows** this uses the built-in Edge WebView2 runtime, which ships with
+Windows 11 - no extra install. (On macOS/Linux, pywebview uses the system
+WebKit/GTK webview.) It's all local: the window talks straight to Python and
+the SQLite DB, and the only network access is the scrapes you trigger yourself.
 
 ## Contacts (Apollo.io) - GovSpend's Contacts module, for real
 
@@ -257,6 +283,8 @@ govspend_free/
 │   └── alerts.yaml.example         # Email digest (copy -> alerts.yaml)
 ├── govspend_free/
 │   ├── utils.py                    # HTTP, dedup state, keyword matching, PDF text
+│   ├── pipeline.py                 # scrape orchestration (shared by CLI + UI)
+│   ├── desktop.py                  # optional pywebview desktop dashboard
 │   ├── db.py                       # SQLite + FTS5 persistent store
 │   ├── bid_scraper.py
 │   ├── board_minutes_scraper.py
