@@ -45,6 +45,7 @@ from govspend_free import (
     alerts,
     brief,
     db,
+    doctor,
     llm,
     opportunities,
     ops,
@@ -66,6 +67,7 @@ def parse_args():
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("--state", help="Only scan this state key from sources.yaml (e.g. arkansas)")
     p.add_argument("--list-states", action="store_true", help="List configured state keys and exit")
+    p.add_argument("--doctor", action="store_true", help="Report what's configured/working (deps, config files, tokens, DB contents), then exit")
     p.add_argument("--skip-transparency", action="store_true")
     p.add_argument("--skip-federal", action="store_true", help="Skip the USAspending federal-grant pass")
     p.add_argument("--skip-board-minutes", action="store_true")
@@ -111,6 +113,10 @@ def main():
     if args.list_states:
         for key in sources:
             print(key)
+        return
+
+    if args.doctor:
+        doctor.run_doctor()
         return
 
     conn = db.get_conn()

@@ -26,7 +26,7 @@ from pathlib import Path
 
 import yaml
 
-from . import brief, db, opportunities, ops, pipeline, utils
+from . import brief, db, doctor, opportunities, ops, pipeline, utils
 from .utils import log
 
 CONFIG_DIR = utils.ROOT_DIR / "config"
@@ -87,6 +87,11 @@ class Api:
         """Open a result link in the user's real browser, not the app window."""
         if url:
             webbrowser.open(url)
+
+    def doctor(self) -> dict:
+        """Setup report for the UI (same as `python main.py --doctor`)."""
+        report = doctor.gather()
+        return {"text": doctor.format_report(report), "report": report}
 
     # ------------------------------ scrape ------------------------------
 
@@ -438,6 +443,11 @@ HTML = r"""
     <!-- Scrape -->
     <section id="tab-scrape" class="tabpane hidden">
       <div class="panel">
+        <div class="row" style="margin-bottom:6px">
+          <button class="ghost" onclick="checkSetup()">Check setup</button>
+          <span class="hint">deps, config files, tokens, and what's in the local DB</span>
+        </div>
+        <pre id="doctorOut" class="brief-body hidden" style="max-height:320px"></pre>
         <div class="row">
           <label class="chk">State:
             <select id="state"><option value="">All states</option></select>
@@ -835,6 +845,19 @@ HTML = r"""
       el('scrapeStatus').className = 'status err';
       el('scrapeStatus').textContent = res.error || 'Could not start.';
       el('runBtn').disabled = false;
+    }
+  }
+
+  // ---- setup doctor ----
+  async function checkSetup() {
+    const out = el('doctorOut');
+    out.classList.remove('hidden');
+    out.textContent = 'Checking...';
+    try {
+      const r = await api().doctor();
+      out.textContent = r.text;
+    } catch (e) {
+      out.textContent = 'Could not run setup check: ' + (e && e.message ? e.message : e);
     }
   }
 
