@@ -1,0 +1,42 @@
+# config/normalize.yaml  (copy to config/normalize.yaml to override defaults)
+#
+# Spending normalization is CLOSED-WORLD: a raw vendor/agency is resolved only
+# against the sets below (competitors seeded from keywords.yaml + the client),
+# so "VIVID SEATS" never gets mistaken for SEAtS. Everything here is optional -
+# with no file present, the built-in defaults are used.
+
+# The canonical client name every SEAtS alias resolves to.
+client_name: SEAtS Software
+
+# Raw forms that mean "this is us" (the client), in any casing.
+client_aliases:
+  - SEAtS
+  - SEAtS Software
+  - SEAtS ONE
+  - SEATS SOFTWARE
+  - SEATS SOFTWARE LIMITED
+
+# Short/common tokens that must match EXACTLY (never as a prefix). This is what
+# stops "VIVID SEATS *HARTFORD" from resolving to SEAtS via the bare "SEATS".
+ambiguous_terms:
+  - SEATS
+
+# Group competitor aliases/products under one canonical name for the footprint
+# rollup. Anything in the keywords.yaml watchlist not listed here maps to itself.
+competitor_aliases:
+  EAB Navigate: EAB
+  Civitas Learning: Civitas
+  Watermark Insights: Watermark
+  Workday Student: Workday
+
+# Raw agency/fund name -> canonical (fill in per state as you go; the raw value
+# is always kept alongside). Example:
+# agency_aliases:
+#   "Charter Oak State College Brd For St Acad Awrd Op Fund": "Charter Oak State College"
+agency_aliases: {}
+
+# Per-state expense/object code (or label) -> canonical category. Example:
+# category_crosswalk:
+#   "53755": "Software"
+#   "NON-CONTROLLABLE SOFTWARE": "Software"
+category_crosswalk: {}

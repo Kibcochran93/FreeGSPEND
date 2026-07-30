@@ -307,6 +307,29 @@ competitor-footprint intel from state checkbooks, it doesn't replace it. Only
 higher-ed recipients are kept (K-12 districts that also get TRIO/GEAR UP money
 are filtered out); pass `higher_ed_only: false` in a source to include everyone.
 
+## Spending normalization (the `payments` table)
+
+State checkbooks are messy: the same case-insensitive match that finds
+`SEATS SOFTWARE LIMITED` (really SEAtS) also tags `VIVID SEATS *HARTFORD` (a
+ticket reseller). `normalize.py` resolves that. It's **closed-world** on purpose
+- instead of trying to normalize every vendor in America (the OpenTheBooks /
+GovSpend build), it matches each raw vendor only against a known set: the
+`keywords.yaml` competitors, the client's aliases, and a higher-ed institution
+pattern. Deterministic, inspectable, tuned in `config/normalize.yaml`
+(canonical names, `ambiguous_terms` like `SEATS` that must match exactly, and
+per-state agency/category crosswalks).
+
+```
+python main.py --normalize-payments   # resolve stored checkbook rows -> payments table
+```
+
+Run against the CT/DE/NY data already scraped, it produced a clean vendor
+footprint - SEAtS 12, Jenzabar 50, Ellucian 73, Watermark 10, Anthology 2 -
+with the `VIVID SEATS` rows correctly dropped as `unknown`. Each `payments` row
+keeps the raw values (`vendor_raw`, `agency_raw`, `category_code_raw`) next to
+the canonical ones, so nothing is lost. This is the foundation for pulling more
+states via the SODA API (Socrata) and bulk CSVs.
+
 ## Closing the JS-rendered gap (`--browser`, optional)
 
 `js_rendered` sources need a real browser, not just `requests`. That's now

@@ -82,6 +82,30 @@ CREATE TABLE IF NOT EXISTS contacts (
     organization_name TEXT,
     scraped_at TEXT DEFAULT (datetime('now'))
 );
+
+-- Normalized spending: one row per payment, with raw source values kept
+-- alongside the canonicalized ones (vendor resolved to a tracked competitor /
+-- the client / a higher-ed institution, or left unknown). `ref` is a caller-
+-- supplied provenance/dedup key (e.g. 'doc:123', 'ct:<socrata_row_id>').
+CREATE TABLE IF NOT EXISTS payments (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    ref TEXT UNIQUE,
+    state TEXT,
+    source TEXT,
+    source_url TEXT,
+    fiscal_year TEXT,
+    agency_raw TEXT,
+    agency_canonical TEXT,
+    vendor_raw TEXT,
+    vendor_canonical TEXT,
+    vendor_kind TEXT,               -- client | competitor | institution | unknown
+    amount REAL,
+    paid_date TEXT,
+    category_code_raw TEXT,
+    category_canonical TEXT,
+    scraped_at TEXT DEFAULT (datetime('now')),
+    updated_at TEXT
+);
 """
 
 
@@ -95,6 +119,10 @@ CREATE INDEX IF NOT EXISTS idx_documents_source      ON documents(source);
 CREATE INDEX IF NOT EXISTS idx_documents_scraped_at  ON documents(scraped_at);
 CREATE INDEX IF NOT EXISTS idx_contracts_expiration  ON contracts(days_until_expiration);
 CREATE INDEX IF NOT EXISTS idx_contacts_institution  ON contacts(institution);
+CREATE INDEX IF NOT EXISTS idx_payments_state        ON payments(state);
+CREATE INDEX IF NOT EXISTS idx_payments_vendor_kind  ON payments(vendor_kind);
+CREATE INDEX IF NOT EXISTS idx_payments_vendor_canon ON payments(vendor_canonical);
+CREATE INDEX IF NOT EXISTS idx_payments_source       ON payments(source);
 """
 
 
@@ -185,6 +213,39 @@ def insert_document(conn: sqlite3.Connection, *, doc_type: str, state: str = "",
         return cur.lastrowid
     except sqlite3.IntegrityError:
         return None  # already have this exact document
+
+
+def insert_payment(conn: sqlite3.Connection, *, ref: str, state: str = "", source: str = "",
+                   source_url: str = "", fiscal_year: str = "", agency_raw: str = "",
+                   agency_canonical: str = "", vendor_raw: str = "", vendor_canonical: str | None = None,
+                   vendor_kind: str = "unknown", amount: float | None = None, paid_date: str = "",
+                   category_code_raw: str = "", category_canonical: str | None = None) -> int | None:
+    """Insert a normalized payment, skipping if `ref` was already stored
+    (UNIQUE). Returns the new row id, or None on a duplicate ref."""
+    try:
+        cur = conn.execute(
+            "INSERT INTO payments (ref, state, source, source_url, fiscal_year, agency_raw, "
+            "agency_canonical, vendor_raw, vendor_canonical, vendor_kind, amount, paid_date, "
+            "category_code_raw, category_canonical, updated_at) "
+            "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?, datetime('now'))",
+            (ref, state, source, source_url, fiscal_year, agency_raw, agency_canonical,
+             vendor_raw, vendor_canonical, vendor_kind, amount, paid_date,
+             category_code_raw, category_canonical),
+        )
+        conn.commit()
+        return cur.lastrowid
+    except sqlite3.IntegrityError:
+        return None  # already have this payment ref
+
+
+def payments_summary(conn: sqlite3.Connection) -> list[sqlite3.Row]:
+    """Vendor-footprint rollup: how many payments (and to whom) per state, by
+    resolved vendor kind. Only the rows the normalizer actually matched."""
+    return conn.execute(
+        "SELECT state, vendor_kind, vendor_canonical, COUNT(*) n "
+        "FROM payments WHERE vendor_kind IN ('client','competitor','institution') "
+        "GROUP BY state, vendor_kind, vendor_canonical ORDER BY state, vendor_kind, n DESC"
+    ).fetchall()
 
 
 def insert_contract(conn: sqlite3.Connection, *, state: str = "", institution: str = "",

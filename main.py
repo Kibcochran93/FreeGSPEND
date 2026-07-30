@@ -47,6 +47,7 @@ from govspend_free import (
     db,
     doctor,
     llm,
+    normalize,
     opportunities,
     ops,
     pipeline,
@@ -93,6 +94,7 @@ def parse_args():
     p.add_argument("--brief", metavar="DOC_ID_OR_INSTITUTION", help="Generate a SEAtS account brief for a scraped doc id or institution name (uses the local `claude` CLI, your Claude login)")
     p.add_argument("--send-alerts-only", action="store_true", help="Email a digest of the most recently scraped documents (from the DB), without scraping again")
     p.add_argument("--retag", action="store_true", help="Re-run keyword/watchlist matching over already-scraped documents with the current keywords.yaml, updating their tags (use after editing keywords)")
+    p.add_argument("--normalize-payments", action="store_true", help="Resolve stored state-checkbook rows into the normalized `payments` table (competitor/client footprint), then exit")
 
     p.add_argument("-q", "--quiet", action="store_true", help="Only log warnings/errors; still prints results (report path, summary, search output)")
     p.add_argument("-v", "--verbose", action="store_true", help="Verbose (DEBUG-level) logging")
@@ -174,6 +176,21 @@ def main():
 
     if args.send_alerts_only:
         _resend_last_report_digest(conn)
+        return
+
+    if args.normalize_payments:
+        stats = normalize.backfill_payments_from_documents(conn)
+        print(f"\nNormalized {stats['scanned']} checkbook row(s) into the payments table:")
+        print(f"  client (SEAtS):   {stats['client']}")
+        print(f"  competitor:       {stats['competitor']}")
+        print(f"  institution:      {stats['institution']}")
+        print(f"  unknown (skipped): {stats['unknown']}")
+        print(f"  newly inserted:   {stats['inserted']}")
+        rollup = db.payments_summary(conn)
+        if rollup:
+            print("\nVendor footprint (resolved payments):")
+            for r in rollup:
+                print(f"  {r['state']:12} {r['vendor_kind']:11} {r['vendor_canonical'] or '':22} {r['n']}")
         return
 
     if args.retag:
