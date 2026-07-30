@@ -212,6 +212,21 @@ def test_api_start_brief_guards(monkeypatch):
     assert r2["started"] is False
 
 
+def test_api_home_stats(api_on_seeded_db):
+    s = api_on_seeded_db.home_stats()
+    assert set(s) == {"cards", "top_opportunities", "top_competitors"}
+    assert len(s["cards"]) == 6
+    for c in s["cards"]:
+        assert c["rag"] in {"green", "amber", "red", "gray"}
+        assert "value" in c and "sub" in c
+    json.dumps(s)  # the bridge serializes to the page
+    # Seeded DB: 1 document, a contract 120d out (within 180, not 90), no payments.
+    by_label = {c["label"]: c for c in s["cards"]}
+    assert by_label["Documents"]["value"] == "1"
+    exp = next(c for c in s["cards"] if "Expiring" in c["label"])
+    assert exp["value"] == "0" and exp["rag"] == "amber"
+
+
 def test_api_list_states_reads_config():
     # No DB needed - reads config/sources.yaml. Confirms the 10 pilot states.
     states = desktop.Api().list_states()

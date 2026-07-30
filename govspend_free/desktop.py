@@ -93,6 +93,69 @@ class Api:
         report = doctor.gather()
         return {"text": doctor.format_report(report), "report": report}
 
+    def home_stats(self) -> dict:
+        """Dashboard summary with a RAG (red/amber/green) status per metric, plus
+        a couple of mini-lists. All read-only from the DB."""
+        conn = db.get_conn()
+        try:
+            q = conn.execute
+            # Data freshness - how stale is the newest scraped document?
+            fr = q("SELECT MAX(scraped_at) m, "
+                   "CAST(julianday('now') - julianday(MAX(scraped_at)) AS INTEGER) age "
+                   "FROM documents").fetchone()
+            if fr["m"] is None:
+                fresh_val, fresh_rag, fresh_sub = "no data", "red", "run a scrape"
+            else:
+                age = fr["age"] or 0
+                fresh_val = "today" if age <= 0 else f"{age}d ago"
+                fresh_rag = "green" if age <= 7 else "amber" if age <= 30 else "red"
+                fresh_sub = f"last scrape {str(fr['m'])[:10]}"
+
+            total_docs = q("SELECT COUNT(*) n FROM documents").fetchone()["n"]
+            by_type = {r["doc_type"]: r["n"]
+                       for r in q("SELECT doc_type, COUNT(*) n FROM documents GROUP BY doc_type")}
+
+            opps = opportunities.rank_opportunities(conn, limit=100000)
+            opp_count = len(opps)
+            top_score = opps[0]["score"] if opps else 0
+            opp_rag = "green" if top_score >= 30 else "amber" if opp_count else "red"
+
+            exp90 = len(db.upcoming_expirations(conn, within_days=90))
+            exp180 = len(db.upcoming_expirations(conn, within_days=180))
+            exp_rag = "red" if exp90 else "amber" if exp180 else "green"
+
+            kinds = {r["vendor_kind"]: r["n"]
+                     for r in q("SELECT vendor_kind, COUNT(*) n FROM payments GROUP BY vendor_kind")}
+            comp, client = kinds.get("competitor", 0), kinds.get("client", 0)
+            top_comp = [{"vendor": r["vendor_canonical"], "n": r["n"]}
+                        for r in q("SELECT vendor_canonical, COUNT(*) n FROM payments "
+                                   "WHERE vendor_kind='competitor' AND vendor_canonical IS NOT NULL "
+                                   "GROUP BY 1 ORDER BY n DESC LIMIT 6")]
+            fp_rag = "green" if comp else "amber" if client else "gray"
+
+            states_with = q("SELECT COUNT(DISTINCT state) n FROM documents "
+                            "WHERE state IS NOT NULL AND state != ''").fetchone()["n"]
+            total_states = len(self.list_states())
+            cov_rag = "green" if states_with >= 8 else "amber" if states_with >= 3 else "red"
+
+            top_opps = [{"score": o["score"], "doc_type": o["doc_type"], "institution": o["institution"],
+                         "title": o["title"], "url": o["url"]} for o in opps[:6]]
+        finally:
+            conn.close()
+
+        cards = [
+            {"label": "Data freshness", "value": fresh_val, "rag": fresh_rag, "sub": fresh_sub},
+            {"label": "Opportunities", "value": str(opp_count), "rag": opp_rag, "sub": f"top score {top_score}"},
+            {"label": "Expiring ≤ 90d", "value": str(exp90), "rag": exp_rag, "sub": f"{exp180} within 180d"},
+            {"label": "Competitor payments", "value": str(comp), "rag": fp_rag,
+             "sub": f"{client} to client · {len(top_comp)} vendors"},
+            {"label": "Documents", "value": str(total_docs), "rag": "green" if total_docs else "red",
+             "sub": ", ".join(f"{k} {v}" for k, v in sorted(by_type.items())) or "none"},
+            {"label": "States covered", "value": f"{states_with}/{total_states}", "rag": cov_rag,
+             "sub": "with scraped data"},
+        ]
+        return {"cards": cards, "top_opportunities": top_opps, "top_competitors": top_comp}
+
     # ------------------------------ scrape ------------------------------
 
     def start_scrape(self, options: dict | None = None) -> dict:
@@ -333,6 +396,19 @@ HTML = r"""
   .gate-ok { color: #15803d; }
   .status { margin-top: 10px; font-size: 13px; }
   .status.ok { color: #15803d; } .status.err { color: var(--soon); }
+  /* Home dashboard RAG cards */
+  .homegrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 12px; margin-top: 10px; }
+  .stat-card { border: 1px solid var(--line); border-left-width: 4px; border-radius: 10px; padding: 12px 14px; background: #fff; }
+  .stat-card .k { font-size: 11px; text-transform: uppercase; letter-spacing: .4px; color: var(--muted); display: flex; align-items: center; }
+  .stat-card .v { font-size: 26px; font-weight: 700; font-variant-numeric: tabular-nums; margin: 3px 0 1px; }
+  .stat-card .s { font-size: 11px; color: var(--muted); }
+  .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; background: var(--muted); }
+  .rag-green { border-left-color: #16a34a; } .rag-green .dot { background: #16a34a; }
+  .rag-amber { border-left-color: #d97706; } .rag-amber .dot { background: #d97706; }
+  .rag-red   { border-left-color: #dc2626; } .rag-red   .dot { background: #dc2626; }
+  .rag-gray  { border-left-color: var(--line); } .rag-gray .dot { background: var(--muted); }
+  .minirow { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid var(--line); font-size: 13px; }
+  .minirow .n { font-variant-numeric: tabular-nums; color: var(--muted); }
   .hidden { display: none !important; }  /* must beat .overlay's display:flex */
   button.briefbtn {
     padding: 4px 10px; border: 1px solid var(--accent); background: #fff; color: var(--accent);
@@ -370,7 +446,8 @@ HTML = r"""
   </header>
 
   <nav class="tabs">
-    <button class="tab active" data-tab="opps">Opportunities</button>
+    <button class="tab active" data-tab="home">Home</button>
+    <button class="tab" data-tab="opps">Opportunities</button>
     <button class="tab" data-tab="search">Search</button>
     <button class="tab" data-tab="exp">Expirations</button>
     <button class="tab" data-tab="ops">Ops</button>
@@ -378,8 +455,28 @@ HTML = r"""
   </nav>
 
   <main>
+    <!-- Home / Dashboard -->
+    <section id="tab-home" class="tabpane">
+      <div class="panel">
+        <div class="row">
+          <strong>Dashboard</strong>
+          <span class="spacer" style="flex:1"></span>
+          <button class="primary" onclick="loadHome()">Refresh</button>
+        </div>
+        <p class="hint">Status at a glance &mdash;
+          <span class="dot rag-green"></span> good &nbsp;
+          <span class="dot rag-amber"></span> watch &nbsp;
+          <span class="dot rag-red"></span> act now.</p>
+        <div id="homeGrid" class="homegrid"></div>
+        <div class="row" style="margin-top:18px; align-items:flex-start; gap:24px">
+          <div style="flex:2; min-width:300px"><strong>Top opportunities</strong><div id="homeOpps"></div></div>
+          <div style="flex:1; min-width:220px"><strong>Competitor footprint</strong><div id="homeComp"></div></div>
+        </div>
+      </div>
+    </section>
+
     <!-- Opportunities -->
-    <section id="tab-opps" class="tabpane">
+    <section id="tab-opps" class="tabpane hidden">
       <div class="panel">
         <div class="row">
           <strong>Ranked opportunities</strong>
@@ -526,7 +623,9 @@ HTML = r"""
     t.classList.add('active');
     document.querySelectorAll('.tabpane').forEach(p => p.classList.add('hidden'));
     el('tab-' + t.dataset.tab).classList.remove('hidden');
-    if (t.dataset.tab === 'ops') checkOpsGate();
+    if (t.dataset.tab === 'home') loadHome();
+    else if (t.dataset.tab === 'opps') loadOpps();
+    else if (t.dataset.tab === 'ops') checkOpsGate();
   });
 
   // ---- helpers ----
@@ -649,6 +748,40 @@ HTML = r"""
       btn.onclick = () => startBrief(r.id, r.institution || `doc ${r.id}`);
       tr.appendChild(td(btn));
       return tr;
+    });
+  }
+
+  // ---- Home / Dashboard ----
+  async function loadHome() {
+    let d;
+    try { d = await api().home_stats(); }
+    catch (e) { el('homeGrid').innerHTML = '<div class="empty">Could not load dashboard: ' + (e && e.message ? e.message : e) + '</div>'; return; }
+    const grid = el('homeGrid'); grid.innerHTML = '';
+    (d.cards || []).forEach(c => {
+      const card = document.createElement('div');
+      card.className = 'stat-card rag-' + (c.rag || 'gray');
+      const k = document.createElement('div'); k.className = 'k';
+      const dot = document.createElement('span'); dot.className = 'dot'; k.appendChild(dot);
+      k.appendChild(document.createTextNode(c.label));
+      const v = document.createElement('div'); v.className = 'v'; v.textContent = c.value;
+      const s = document.createElement('div'); s.className = 's'; s.textContent = c.sub || '';
+      card.appendChild(k); card.appendChild(v); card.appendChild(s);
+      grid.appendChild(card);
+    });
+    renderTable('homeOpps', ['Score', 'Institution', 'Title'], d.top_opportunities || [], (r) => {
+      const tr = document.createElement('tr');
+      const sc = td(r.score); sc.className = 'score'; tr.appendChild(sc);
+      tr.appendChild(td(r.institution || ''));
+      tr.appendChild(td(link(r.url, r.title || '(untitled)')));
+      return tr;
+    });
+    const comp = el('homeComp'); comp.innerHTML = '';
+    if (!(d.top_competitors || []).length) { comp.innerHTML = '<div class="empty">No payments yet &mdash; run --ingest-spend.</div>'; }
+    else d.top_competitors.forEach(c => {
+      const row = document.createElement('div'); row.className = 'minirow';
+      const a = document.createElement('span'); a.textContent = c.vendor;
+      const b = document.createElement('span'); b.className = 'n'; b.textContent = c.n;
+      row.appendChild(a); row.appendChild(b); comp.appendChild(row);
     });
   }
 
@@ -897,7 +1030,7 @@ HTML = r"""
     const states = await api().list_states();
     const sel = el('state');
     states.forEach(s => { const o = document.createElement('option'); o.value = s; o.textContent = s; sel.appendChild(o); });
-    loadOpps();
+    loadHome();
   }
   window.addEventListener('pywebviewready', init);
 </script>
