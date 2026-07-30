@@ -291,6 +291,58 @@ def download_text_hashed(
     return text, hasher.hexdigest()
 
 
+def download_bytes(url: str, session: requests.Session, max_bytes: int = 200 * 1024 * 1024) -> bytes | None:
+    """Download a binary file fully into memory (needed for zip-based .xlsx,
+    which can't be parsed as a stream). Skips files larger than max_bytes.
+    Returns None on failure/oversize."""
+    resp = fetch(url, session=session, stream=True)
+    if resp is None:
+        return None
+    chunks: list[bytes] = []
+    total = 0
+    try:
+        for chunk in resp.iter_content(chunk_size=1024 * 1024):
+            if not chunk:
+                continue
+            total += len(chunk)
+            if total > max_bytes:
+                log.warning("  [download too large] %s exceeds %d bytes - skipping", url, max_bytes)
+                return None
+            chunks.append(chunk)
+    except requests.RequestException as exc:
+        log.warning("  [download error] %s -> %s", url, exc)
+        return None
+    return b"".join(chunks)
+
+
+def iter_xlsx_rows(data: bytes, max_rows: int = 200_000):
+    """Yield rows (list[str]) from the first worksheet of an .xlsx byte blob,
+    using openpyxl in read-only mode so large files stream row-by-row. Yields
+    nothing if openpyxl is missing or the file can't be parsed."""
+    try:
+        import openpyxl
+    except ImportError:
+        log.warning("  [warn] openpyxl not installed, skipping .xlsx "
+                    "(pip install -r requirements.txt)")
+        return
+    import io
+    try:
+        wb = openpyxl.load_workbook(io.BytesIO(data), read_only=True, data_only=True)
+    except Exception as exc:  # openpyxl raises several types on bad/other formats
+        log.warning("  [xlsx parse error] %s", exc)
+        return
+    try:
+        ws = wb.active
+        for i, row in enumerate(ws.iter_rows(values_only=True)):
+            if i >= max_rows:
+                break
+            yield ["" if c is None else str(c) for c in row]
+    except Exception as exc:
+        log.warning("  [xlsx read error] %s", exc)
+    finally:
+        wb.close()
+
+
 # --------------------------------------------------------------------------
 # PDF text extraction
 # --------------------------------------------------------------------------

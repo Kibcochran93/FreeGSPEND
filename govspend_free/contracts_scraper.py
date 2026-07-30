@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import csv
 import datetime as dt
+import hashlib
 import io
 import re
 
@@ -42,43 +43,36 @@ def scrape_contracts(transparency_source: dict, session, seen: set[str]) -> tupl
     if skip is not None:
         return contracts, [skip]
 
-    csv_links = [
+    data_links = [
         utils.absolute_url(url, a["href"])
         for a in soup.find_all("a", href=True)
-        if a["href"].lower().endswith(".csv")
+        if a["href"].lower().split("?", 1)[0].endswith((".csv", ".xlsx"))
     ]
 
-    if not csv_links:
-        return contracts, [{"url": url, "reason": "no_csv_links_found",
-                            "notes": "Contracts scraper only reads CSV downloads."}]
+    if not data_links:
+        return contracts, [{"url": url, "reason": "no_data_files_found",
+                            "notes": "Contracts scraper reads CSV and XLSX downloads."}]
 
-    for link in csv_links[:10]:
-        # Dedup on CONTENT, not URL, so an updated contracts CSV (new rows,
-        # changed end dates) at a stable URL is re-read rather than skipped
-        # forever after the first run.
-        text, content_hash = utils.download_text_hashed(link, session)
-        if text is None:
+    for link in data_links[:10]:
+        # Dedup on CONTENT, not URL, so an updated file (new rows, changed end
+        # dates) at a stable URL is re-read rather than skipped forever.
+        rows, key = _load_rows(link, session)
+        if rows is None:
             continue
-        key = utils.item_hash("contracts", link, content_hash)
         if key in seen:
             continue
         seen.add(key)
 
-        try:
-            reader = csv.reader(io.StringIO(text))
-            header = next(reader, None)
-        except csv.Error as exc:
-            log.warning("  [contracts csv error] %s -> %s", link, exc)
-            continue
-
+        rows = iter(rows)
+        header = next(rows, None)
         if header is None:
             continue
 
         col_idx = _match_columns(header)
         if col_idx["start"] is None or col_idx["end"] is None:
-            continue  # not contract-shaped data, skip silently (expenditure CSV etc)
+            continue  # not contract-shaped data, skip silently (expenditure file etc)
 
-        for row in reader:
+        for row in rows:
             try:
                 vendor = row[col_idx["vendor"]] if col_idx["vendor"] is not None and col_idx["vendor"] < len(row) else ""
                 start_raw = row[col_idx["start"]] if col_idx["start"] < len(row) else ""
@@ -100,6 +94,28 @@ def scrape_contracts(transparency_source: dict, session, seen: set[str]) -> tupl
             })
 
     return contracts, []
+
+
+def _load_rows(link: str, session) -> tuple[list[list[str]] | None, str | None]:
+    """Return (rows, content_key) for a .csv or .xlsx link, or (None, None) on
+    failure. content_key is a per-content dedup key so an updated file re-parses."""
+    lower = link.lower().split("?", 1)[0]
+    if lower.endswith(".xlsx"):
+        data = utils.download_bytes(link, session)
+        if data is None:
+            return None, None
+        key = utils.item_hash("contracts-xlsx", link, hashlib.sha256(data).hexdigest())
+        return list(utils.iter_xlsx_rows(data)), key
+    # CSV
+    text, content_hash = utils.download_text_hashed(link, session)
+    if text is None:
+        return None, None
+    key = utils.item_hash("contracts-csv", link, content_hash)
+    try:
+        return list(csv.reader(io.StringIO(text))), key
+    except csv.Error as exc:
+        log.warning("  [contracts csv error] %s -> %s", link, exc)
+        return None, None
 
 
 def _match_columns(header: list[str]) -> dict:

@@ -130,6 +130,33 @@ def test_contracts_scraper_column_detection():
     print("  OK - correctly distinguishes contract CSVs from plain expenditure CSVs, date math is right")
 
 
+def test_xlsx_parsing_and_contract_detection():
+    print("[test] xlsx parsing + contract column detection ...")
+    import io
+    import openpyxl
+    from govspend_free import contracts_scraper
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.append(["Vendor Name", "Contract Start Date", "Contract End Date", "Contract Value"])
+    future = (dt.date.today() + dt.timedelta(days=45)).strftime("%m/%d/%Y")
+    ws.append(["Acme Software", "01/01/2024", future, "50000"])
+    ws.append([None, None, None, None])  # blank cells -> "" (no crash)
+    buf = io.BytesIO()
+    wb.save(buf)
+
+    rows = list(utils.iter_xlsx_rows(buf.getvalue()))
+    assert len(rows) == 3 and rows[0][0] == "Vendor Name"
+    assert rows[1] == ["Acme Software", "01/01/2024", future, "50000"]
+
+    cols = contracts_scraper._match_columns(rows[0])
+    assert cols["vendor"] == 0 and cols["start"] == 1 and cols["end"] == 2
+
+    # A non-xlsx blob must degrade to no rows, not raise.
+    assert list(utils.iter_xlsx_rows(b"this is not a workbook")) == []
+    print("  OK - xlsx rows parse and feed the same contract column detection")
+
+
 def test_contracts_content_based_dedup():
     print("[test] contracts_scraper content-based dedup (updated CSV re-parses) ...")
 

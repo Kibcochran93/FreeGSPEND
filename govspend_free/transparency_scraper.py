@@ -18,6 +18,7 @@ handful of downloadable files on this page mention my watchlist vendors."
 from __future__ import annotations
 
 import csv
+import hashlib
 import io
 
 from . import utils
@@ -118,12 +119,35 @@ def scrape_transparency(source: dict, session, seen: set[str], watchlist_pattern
                 log.warning("  [csv parse error] %s -> %s", link, exc)
             continue
 
-        # .xlsx/.xls or anything else: not parsed in this lightweight
-        # version. Log so you know it's there.
+        if lower.endswith(".xlsx"):
+            # e.g. Open Georgia's TER_Data_*.xlsx. Dedup on content like CSVs.
+            data = utils.download_bytes(link, session)
+            if data is None:
+                continue
+            xlsx_key = utils.item_hash("transparency-xlsx", link,
+                                       hashlib.sha256(data).hexdigest())
+            if xlsx_key in seen:
+                continue
+            seen.add(xlsx_key)
+            for row in utils.iter_xlsx_rows(data):
+                row_text = " ".join(row)
+                hits = utils.match_watchlist(row_text, watchlist_patterns)
+                if hits:
+                    matches.append({
+                        "source_url": url,
+                        "file_url": link,
+                        "file_type": "xlsx",
+                        "watchlist_hits": hits,
+                        "row": row_text[:300],
+                    })
+            continue
+
+        # .xls (legacy binary) or anything else: not parsed here. Log so you
+        # know it's there.
         skipped.append({
             "url": link,
             "reason": "unsupported_download_format",
-            "notes": "Add an xlsx parser (e.g. openpyxl) if you need these.",
+            "notes": "Only .csv, .xlsx and .pdf are parsed (legacy .xls is not).",
         })
 
     return matches, skipped
