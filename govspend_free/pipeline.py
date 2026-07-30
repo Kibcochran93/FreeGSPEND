@@ -161,7 +161,7 @@ def run_scrape(
                             conn, doc_type="bid", state=state_key, institution=system["name"],
                             title=m["title"], url=m.get("detail_url") or m["source_url"],
                             text=m.get("description", ""), date=m.get("date", ""),
-                            categories=m["categories"],
+                            categories=m["categories"], source="bids",
                         )
                     result.bids.extend(new_matches)
                     for s in skipped:
@@ -184,6 +184,7 @@ def run_scrape(
                             conn, doc_type="board_minutes", state=state_key, institution=system["name"],
                             title=m["document_title"], url=m["document_url"], text=m.get("full_text", ""),
                             categories=m["categories"], watchlist_hits=m["watchlist_hits"],
+                            source="board_minutes",
                         )
                     result.minutes.extend(new_matches)
                     for s in skipped:
@@ -209,6 +210,7 @@ def run_scrape(
                         url=m.get("file_url", ""),
                         text=(row_text or m.get("file_url", "")),
                         watchlist_hits=m.get("watchlist_hits", []),
+                        source=("socrata" if t_src.get("type") == "socrata" else "transparency"),
                     )
                 result.transparency.extend(new_matches)
                 for s in skipped:
@@ -247,6 +249,7 @@ def run_scrape(
                         institution=m["institution"], title=m["title"],
                         url=m["award_url"], text=m["blob"], date=m.get("date", ""),
                         categories=m["categories"], watchlist_hits=m.get("watchlist_hits", []),
+                        source="usaspending",
                     )
                 result.federal.extend(new_matches)
                 for s in skipped:

@@ -39,6 +39,8 @@ CREATE TABLE IF NOT EXISTS documents (
     categories TEXT,                -- comma-joined category labels
     watchlist_hits TEXT,            -- comma-joined watchlist terms
     scraped_at TEXT DEFAULT (datetime('now')),
+    updated_at TEXT,                -- set on insert and on tag updates (--retag)
+    source TEXT,                    -- provenance tag: which scraper produced the row
     UNIQUE(doc_type, url, title)
 );
 
@@ -83,11 +85,52 @@ CREATE TABLE IF NOT EXISTS contacts (
 """
 
 
+# Indexes are created AFTER _migrate() so the source index has its column on an
+# already-existing DB. All idempotent (IF NOT EXISTS), so this is safe every run.
+_INDEXES = """
+CREATE INDEX IF NOT EXISTS idx_documents_doc_type    ON documents(doc_type);
+CREATE INDEX IF NOT EXISTS idx_documents_state       ON documents(state);
+CREATE INDEX IF NOT EXISTS idx_documents_institution ON documents(institution);
+CREATE INDEX IF NOT EXISTS idx_documents_source      ON documents(source);
+CREATE INDEX IF NOT EXISTS idx_documents_scraped_at  ON documents(scraped_at);
+CREATE INDEX IF NOT EXISTS idx_contracts_expiration  ON contracts(days_until_expiration);
+CREATE INDEX IF NOT EXISTS idx_contacts_institution  ON contacts(institution);
+"""
+
+
+def _column_names(conn: sqlite3.Connection, table: str) -> set[str]:
+    return {r["name"] for r in conn.execute(f"PRAGMA table_info({table})")}
+
+
+def _migrate(conn: sqlite3.Connection) -> None:
+    """Bring an older DB up to the current schema, in place. Idempotent: only
+    adds a column if it's missing, then backfills it once. SQLite can't ADD a
+    column with a non-constant default, so updated_at is added bare and
+    backfilled from scraped_at; source is inferred from each row's doc_type."""
+    cols = _column_names(conn, "documents")
+    if "updated_at" not in cols:
+        conn.execute("ALTER TABLE documents ADD COLUMN updated_at TEXT")
+        conn.execute("UPDATE documents SET updated_at = scraped_at "
+                     "WHERE updated_at IS NULL OR updated_at = ''")
+    if "source" not in cols:
+        conn.execute("ALTER TABLE documents ADD COLUMN source TEXT")
+        conn.execute(
+            "UPDATE documents SET source = CASE doc_type "
+            "  WHEN 'bid' THEN 'bids' "
+            "  WHEN 'board_minutes' THEN 'board_minutes' "
+            "  WHEN 'federal_award' THEN 'usaspending' "
+            "  ELSE 'transparency' END "
+            "WHERE source IS NULL OR source = ''"
+        )
+
+
 def get_conn() -> sqlite3.Connection:
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     try:
-        conn.executescript(_SCHEMA)
+        conn.executescript(_SCHEMA)   # tables + FTS + trigger (new cols on fresh DBs)
+        _migrate(conn)                # add + backfill missing cols on existing DBs
+        conn.executescript(_INDEXES)  # idempotent; needs the columns to exist first
         conn.commit()
     except sqlite3.OperationalError as exc:
         raise RuntimeError(
@@ -108,7 +151,8 @@ def update_document_tags(conn: sqlite3.Connection, doc_id: int,
     Safe w.r.t. the FTS index: documents_fts only mirrors title+text, and this
     touches neither, so no FTS re-sync is needed. Caller commits (batched)."""
     conn.execute(
-        "UPDATE documents SET categories = ?, watchlist_hits = ? WHERE id = ?",
+        "UPDATE documents SET categories = ?, watchlist_hits = ?, updated_at = datetime('now') "
+        "WHERE id = ?",
         (", ".join(categories or []), ", ".join(watchlist_hits or []), doc_id),
     )
 
@@ -116,20 +160,25 @@ def update_document_tags(conn: sqlite3.Connection, doc_id: int,
 def insert_document(conn: sqlite3.Connection, *, doc_type: str, state: str = "",
                      institution: str = "", title: str = "", url: str = "",
                      text: str = "", date: str = "", categories: list[str] | None = None,
-                     watchlist_hits: list[str] | None = None) -> int | None:
+                     watchlist_hits: list[str] | None = None, source: str = "") -> int | None:
     """Insert a document, skipping if (doc_type, url, title) was already
     stored (UNIQUE constraint). Returns the new row id, or None if it was
-    a duplicate (or url/title were both empty, which we don't store)."""
+    a duplicate (or url/title were both empty, which we don't store).
+
+    `source` is a short provenance tag (e.g. "usaspending", "socrata") so you
+    can tell which scraper produced a row."""
     if not url and not title:
         return None
     try:
         cur = conn.execute(
-            "INSERT INTO documents (doc_type, state, institution, title, url, text, date, categories, watchlist_hits) "
-            "VALUES (?,?,?,?,?,?,?,?,?)",
+            "INSERT INTO documents (doc_type, state, institution, title, url, text, date, "
+            "categories, watchlist_hits, source, updated_at) "
+            "VALUES (?,?,?,?,?,?,?,?,?,?, datetime('now'))",
             (
                 doc_type, state, institution, title, url, text, date,
                 ", ".join(categories or []),
                 ", ".join(watchlist_hits or []),
+                source,
             ),
         )
         conn.commit()
