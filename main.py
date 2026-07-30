@@ -86,6 +86,7 @@ def parse_args():
     p.add_argument("--chat", type=int, metavar="DOC_ID", help="Record-Level Chat REPL for one document id (needs Anthropic API key)")
     p.add_argument("--brief", metavar="DOC_ID_OR_INSTITUTION", help="Generate a SEAtS account brief for a scraped doc id or institution name (uses the local `claude` CLI, your Claude login)")
     p.add_argument("--send-alerts-only", action="store_true", help="Send an email digest of the most recent report.csv, without scraping again")
+    p.add_argument("--retag", action="store_true", help="Re-run keyword/watchlist matching over already-scraped documents with the current keywords.yaml, updating their tags (use after editing keywords)")
 
     p.add_argument("-q", "--quiet", action="store_true", help="Only log warnings/errors; still prints results (report path, summary, search output)")
     p.add_argument("-v", "--verbose", action="store_true", help="Verbose (DEBUG-level) logging")
@@ -153,6 +154,16 @@ def main():
 
     if args.send_alerts_only:
         _resend_last_report_digest()
+        return
+
+    if args.retag:
+        stats = pipeline.retag_documents(conn, keywords_cfg)
+        print(f"\nRe-tagged {stats['total']} stored document(s) with the current keywords:")
+        print(f"  changed tags:                          {stats['changed']}")
+        print(f"  gained tags (more specific matches):   {stats['gained']}")
+        print(f"  lost tags (noise removed):             {stats['lost']}")
+        print(f"  now match nothing (noise candidates):  {stats['now_empty']}")
+        print("\nRun `python main.py --opportunities` to see the re-ranked feed.")
         return
 
     # ---- Normal scrape mode ----

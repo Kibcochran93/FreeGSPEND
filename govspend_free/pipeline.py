@@ -276,6 +276,40 @@ def _slug(value: str) -> str:
     return re.sub(r"[^A-Za-z0-9]+", "_", (value or "unknown").strip()).strip("_").lower() or "unknown"
 
 
+def retag_documents(conn, keywords_cfg: dict) -> dict:
+    """Re-run category + watchlist matching over already-stored documents with
+    the CURRENT keywords.yaml, and update each document's tags in place. Useful
+    after retuning keywords - existing rows keep whatever tags they were scraped
+    with until you re-tag. Returns stats; documents that now match nothing are
+    counted as `now_empty` (the noise a retune eliminates)."""
+    matchers = utils.build_category_matchers(keywords_cfg.get("categories", {}))
+    watchlist_patterns = utils.build_watchlist_matchers(keywords_cfg.get("watchlist", []))
+
+    rows = db.all_documents(conn)
+    stats = {"total": len(rows), "changed": 0, "gained": 0, "lost": 0, "now_empty": 0}
+
+    for row in rows:
+        blob = f"{row['title'] or ''}\n{row['text'] or ''}"
+        new_cats = utils.match_categories(blob, matchers)
+        new_watch = utils.match_watchlist(blob, watchlist_patterns)
+        old_cats = [c for c in (row["categories"] or "").split(", ") if c]
+        old_watch = [w for w in (row["watchlist_hits"] or "").split(", ") if w]
+
+        if set(new_cats) != set(old_cats) or set(new_watch) != set(old_watch):
+            db.update_document_tags(conn, row["id"], new_cats, new_watch)
+            stats["changed"] += 1
+            delta = (len(new_cats) + len(new_watch)) - (len(old_cats) + len(old_watch))
+            if delta > 0:
+                stats["gained"] += 1
+            elif delta < 0:
+                stats["lost"] += 1
+        if not new_cats and not new_watch:
+            stats["now_empty"] += 1
+
+    conn.commit()
+    return stats
+
+
 def write_reports(result: ScrapeResult) -> list[Path]:
     """Write per-type, per-state CSVs under reports/<type>/<type>_<state>_<ts>.csv.
 

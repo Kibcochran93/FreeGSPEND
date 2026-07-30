@@ -101,6 +101,18 @@ def get_conn() -> sqlite3.Connection:
     return conn
 
 
+def update_document_tags(conn: sqlite3.Connection, doc_id: int,
+                         categories: list[str] | None, watchlist_hits: list[str] | None) -> None:
+    """Update only a document's category/watchlist tags (used by --retag).
+
+    Safe w.r.t. the FTS index: documents_fts only mirrors title+text, and this
+    touches neither, so no FTS re-sync is needed. Caller commits (batched)."""
+    conn.execute(
+        "UPDATE documents SET categories = ?, watchlist_hits = ? WHERE id = ?",
+        (", ".join(categories or []), ", ".join(watchlist_hits or []), doc_id),
+    )
+
+
 def insert_document(conn: sqlite3.Connection, *, doc_type: str, state: str = "",
                      institution: str = "", title: str = "", url: str = "",
                      text: str = "", date: str = "", categories: list[str] | None = None,

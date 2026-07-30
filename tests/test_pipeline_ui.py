@@ -69,6 +69,37 @@ def test_scrape_criteria():
     assert not empty.active() and empty.keep("anything at all", None)
 
 
+def test_retag_documents(tmp_conn):
+    # A doc that should match the new keywords, and one that should match nothing.
+    db.insert_document(
+        tmp_conn, doc_type="board_minutes", state="or", institution="Oregon Tech",
+        title="Board Minutes", url="http://x/1",
+        text="discussion of persistence and space utilization and SACSCOC reaffirmation",
+        categories=["Stale Old Label"],
+    )
+    db.insert_document(
+        tmp_conn, doc_type="board_minutes", state="or", institution="X", title="Board Minutes",
+        url="http://x/2", text="approval of prior minutes and adjournment", categories=["Stale Old Label"],
+    )
+    kw = {
+        "categories": {
+            "sched": {"label": "Academic & Space Scheduling", "keywords": ["space utilization"]},
+            "success": {"label": "Student Success & Retention", "keywords": ["persistence"]},
+            "accred": {"label": "Accreditation", "keywords": ["reaffirmation", "SACSCOC"]},
+        },
+        "watchlist": ["SEAtS"],
+    }
+    stats = pipeline.retag_documents(tmp_conn, kw)
+    assert stats["total"] == 2
+    assert stats["changed"] == 2
+    assert stats["now_empty"] == 1
+
+    row1 = tmp_conn.execute("SELECT categories FROM documents WHERE id = 1").fetchone()
+    assert "Student Success & Retention" in row1["categories"] and "Accreditation" in row1["categories"]
+    row2 = tmp_conn.execute("SELECT categories, watchlist_hits FROM documents WHERE id = 2").fetchone()
+    assert row2["categories"] == "" and row2["watchlist_hits"] == ""
+
+
 def test_run_scrape_unknown_state_raises(tmp_conn):
     with pytest.raises(ValueError):
         pipeline.run_scrape(
