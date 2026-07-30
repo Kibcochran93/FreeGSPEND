@@ -107,7 +107,10 @@ def gather_signals(conn) -> list[dict]:
     scoped = []
     for acc in accounts.values():
         has_bid = "bid" in acc["doc_types"]
-        if not (acc["competitors"] or has_bid or acc["client_present"]):
+        has_federal = "federal_award" in acc["doc_types"]
+        # In scope if there's a competitor to displace, a live bid, an existing
+        # SEAtS footprint, OR a federal student-success grant (budget signal).
+        if not (acc["competitors"] or has_bid or acc["client_present"] or has_federal):
             continue
         scoped.append({
             "institution": acc["institution"], "state": acc["state"],
@@ -197,7 +200,9 @@ def score_account(account: dict, crm: dict) -> tuple[int, dict]:
 
     competitor_pressure = round(min(len(competitors), 3) / 3 * 25)
 
-    if "transparency" in doc_types or account["client_present"]:
+    # A federal student-success grant is hard budget evidence, same weight as
+    # showing up in a state checkbook.
+    if "transparency" in doc_types or "federal_award" in doc_types or account["client_present"]:
         evidence = 20
     elif "board_minutes" in doc_types:
         evidence = 8
@@ -242,6 +247,8 @@ def top_signal(account: dict) -> str:
         return "Competitor named: " + ", ".join(account["competitors"][:2])
     if "bid" in doc_types:
         return "Active/upcoming bid"
+    if "federal_award" in doc_types:
+        return "Federal student-success grant"
     if account["client_present"]:
         return "Existing vendor footprint (spend)"
     if "transparency" in doc_types:
@@ -276,6 +283,9 @@ def opener(account: dict, crm: dict, cfg: OpsConfig) -> str:
     if "bid" in doc_types:
         return (f"Saw an active procurement in the {state} records - {cfg.client} fits the {focus} "
                 f"requirement; can share a quick comparison from similar campuses.")
+    if "federal_award" in doc_types:
+        return (f"Saw {account['institution']}'s recent federal student-success grant - that's usually "
+                f"when {focus} tooling gets funded; {cfg.client} is purpose-built for it, worth a short compare?")
     if comp:
         return (f"{comp} is the incumbent to beat here - {cfg.client} tends to win on the {focus} gap; "
                 f"open to a short benchmark?")
@@ -388,4 +398,32 @@ def _save_report(markdown: str) -> Path:
     OPS_REPORTS_DIR.mkdir(parents=True, exist_ok=True)
     path = OPS_REPORTS_DIR / f"full_motion_{_now_stamp()}.md"
     path.write_text(markdown or "", encoding="utf-8")
+    return path
+
+
+def markdown_table_to_rows(markdown: str) -> list[list[str]]:
+    """Extract the first GitHub pipe-table from `markdown` as rows (header
+    first), dropping the `---|---` separator. Returns [] if there's no table."""
+    rows: list[list[str]] = []
+    for line in (markdown or "").splitlines():
+        s = line.strip()
+        if not s.startswith("|"):
+            if rows:
+                break                     # table block ended
+            continue
+        cells = [c.strip() for c in s.strip("|").split("|")]
+        if cells and all(c and set(c) <= set("-: ") for c in cells):
+            continue                       # separator row
+        rows.append(cells)
+    return rows
+
+
+def export_play_csv(markdown: str) -> Path:
+    """Write the play's ranked table (parsed from its markdown) to a CSV next to
+    the markdown reports. Returns the path."""
+    import csv as _csv
+    OPS_REPORTS_DIR.mkdir(parents=True, exist_ok=True)
+    path = OPS_REPORTS_DIR / f"full_motion_{_now_stamp()}.csv"
+    with path.open("w", newline="", encoding="utf-8") as f:
+        _csv.writer(f).writerows(markdown_table_to_rows(markdown))
     return path

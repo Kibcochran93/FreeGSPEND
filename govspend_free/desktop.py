@@ -186,6 +186,15 @@ class Api:
         """Is the read-only HubSpot path ready? Drives the button's gate."""
         return ops.hubspot_status()
 
+    def export_play_csv(self, markdown: str) -> dict:
+        """Write the last play's table to a CSV and return its path."""
+        try:
+            path = ops.export_play_csv(markdown or "")
+            return {"ok": True, "path": str(path)}
+        except Exception as exc:
+            log.error("export_play_csv failed: %s", exc)
+            return {"ok": False, "error": str(exc)}
+
     def run_play(self) -> dict:
         """Kick off the Full Motion play on a worker thread. Progress streams
         back via onPyEvent('playLog'/'playDone'/'playError')."""
@@ -432,6 +441,10 @@ HTML = r"""
         </p>
         <div id="opsGate" class="status"></div>
         <div id="playStatus" class="status"></div>
+        <div id="playTools" class="row hidden" style="margin-top:8px">
+          <button class="ghost" onclick="copyPlay()">Copy table</button>
+          <button class="ghost" onclick="savePlayCsv()">Save as CSV</button>
+        </div>
         <div id="playResult"></div>
         <details style="margin-top:12px">
           <summary class="hint" style="cursor:pointer">Run log</summary>
@@ -734,11 +747,28 @@ HTML = r"""
     }
   }
 
+  let _lastPlayMd = '';
+  function copyPlay() {
+    if (_lastPlayMd && navigator.clipboard) {
+      navigator.clipboard.writeText(_lastPlayMd);
+      el('playStatus').className = 'status ok';
+      el('playStatus').textContent = 'Table copied to clipboard.';
+    }
+  }
+  async function savePlayCsv() {
+    if (!_lastPlayMd) return;
+    const r = await api().export_play_csv(_lastPlayMd);
+    el('playStatus').className = r.ok ? 'status ok' : 'status err';
+    el('playStatus').textContent = r.ok ? ('Saved CSV: ' + r.path) : ('CSV export failed: ' + r.error);
+  }
+
   async function runPlay() {
     el('playBtn').disabled = true;
     el('playStatus').className = 'status';
     el('playStatus').textContent = 'Running the Full Motion play (read-only)...';
     el('playResult').innerHTML = '';
+    el('playTools').classList.add('hidden');
+    _lastPlayMd = '';
     el('playLog').textContent = '';
     const res = await api().run_play();
     if (!res.started) {
@@ -762,6 +792,8 @@ HTML = r"""
     } else if (event === 'playDone') {
       el('playStatus').className = 'status ok';
       el('playStatus').textContent = 'Done.' + (payload.report_path ? ' Saved: ' + payload.report_path : '');
+      _lastPlayMd = payload.markdown || '';
+      el('playTools').classList.remove('hidden');
       renderMarkdown('playResult', payload.markdown);
       el('playBtn').disabled = false;
     } else if (event === 'playError') {

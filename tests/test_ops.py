@@ -249,5 +249,45 @@ def test_client_has_no_write_methods():
         assert not any(banned in m for m in dir(hubspot_client.HubSpotClient)), f"write-ish method: {banned}"
 
 
+# ------------------------- federal grants in the play -------------------------
+
+def test_gather_signals_includes_federal_only_account(tmp_conn):
+    db.insert_document(tmp_conn, doc_type="federal_award", state="missouri",
+                       institution="Lincoln University", title="grant",
+                       text="Title III", categories=["Student Success & Retention"])
+    tmp_conn.commit()
+    accts = {s["institution"]: s for s in ops.gather_signals(tmp_conn)}
+    assert "Lincoln University" in accts                       # federal grant alone puts it in scope
+    assert "federal_award" in accts["Lincoln University"]["doc_types"]
+
+
+def test_federal_award_counts_as_budget_evidence():
+    _, b = ops.score_account(_acc(competitors=[], doc_types=["federal_award"]),
+                             {"status": "Whitespace", "contact": None})
+    assert b["evidence"] == 20                                 # same weight as a checkbook hit
+
+
+def test_top_signal_and_opener_federal():
+    acc = _acc(competitors=[], doc_types=["federal_award"], institution="Lincoln University",
+               categories=["Student Success & Retention"])
+    assert "Federal" in ops.top_signal(acc)
+    line = ops.opener(acc, {"status": "Whitespace", "contact": None}, ops.OpsConfig())
+    assert "Lincoln University" in line and "$" not in line    # grounded, no fabricated numbers
+
+
+def test_export_play_csv(monkeypatch):
+    md = ("# Title\n\n| Rank | Agency |\n| --- | --- |\n"
+          "| 1 | UA System |\n| 2 | Lincoln University |\n\n## Top 3\n- x")
+    rows = ops.markdown_table_to_rows(md)
+    assert rows[0] == ["Rank", "Agency"]
+    assert ["1", "UA System"] in rows and ["2", "Lincoln University"] in rows  # separator dropped
+    with tempfile.TemporaryDirectory() as td:
+        monkeypatch.setattr(ops, "OPS_REPORTS_DIR", Path(td))
+        p = ops.export_play_csv(md)
+        assert p.exists() and p.suffix == ".csv"
+        text = p.read_text(encoding="utf-8")
+        assert "Rank,Agency" in text and "UA System" in text
+
+
 if __name__ == "__main__":
     raise SystemExit(pytest.main([__file__, "-v"]))
