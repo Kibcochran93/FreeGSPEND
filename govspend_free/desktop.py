@@ -377,6 +377,7 @@ HTML = r"""
           <label class="chk">Min score <input type="number" id="fScore" value="0" min="0" step="5" style="width:70px" oninput="applyOppFilters()"></label>
           <input type="text" id="fKeyword" placeholder="filter: keyword / title / institution" style="min-width:220px" oninput="applyOppFilters()">
           <select id="fCategory" onchange="applyOppFilters()"><option value="">All categories</option></select>
+          <select id="fType" onchange="applyOppFilters()"><option value="">All types</option></select>
           <label class="chk">From <input type="date" id="fFrom" oninput="applyOppFilters()"></label>
           <label class="chk">To <input type="date" id="fTo" oninput="applyOppFilters()"></label>
           <button class="ghost" onclick="clearOppFilters()">Clear</button>
@@ -493,6 +494,8 @@ HTML = r"""
   });
   const api = () => window.pywebview.api;
   const el = (id) => document.getElementById(id);
+  const TYPE_LABELS = { bid: 'Bid/RFP', board_minutes: 'Board minutes', transparency: 'Spending', federal_award: 'Federal grant' };
+  const typeLabel = (t) => TYPE_LABELS[t] || t;
 
   // ---- tab switching ----
   document.querySelectorAll('.tab').forEach(t => t.onclick = () => {
@@ -557,6 +560,12 @@ HTML = r"""
     sel.innerHTML = '<option value="">All categories</option>';
     [...cats].sort().forEach(c => { const o = document.createElement('option'); o.value = c; o.textContent = c; sel.appendChild(o); });
     sel.value = cur;
+    // Rebuild the type dropdown from whatever doc types are present.
+    const types = new Set((_oppsAll || []).map(r => r.doc_type).filter(Boolean));
+    const tsel = el('fType'), tcur = tsel.value;
+    tsel.innerHTML = '<option value="">All types</option>';
+    [...types].sort().forEach(t => { const o = document.createElement('option'); o.value = t; o.textContent = typeLabel(t); tsel.appendChild(o); });
+    tsel.value = tcur;
     applyOppFilters();
     if (btn) btn.disabled = false;
   }
@@ -572,11 +581,13 @@ HTML = r"""
     const minScore = parseFloat(el('fScore').value) || 0;
     const kw = el('fKeyword').value.trim().toLowerCase();
     const cat = el('fCategory').value;
+    const typ = el('fType').value;
     const from = el('fFrom').value ? new Date(el('fFrom').value) : null;
     let to = el('fTo').value ? new Date(el('fTo').value) : null;
     if (to) to.setHours(23, 59, 59, 999);  // inclusive end-of-day
     const rows = _oppsAll.filter(r => {
       if (r.score < minScore) return false;
+      if (typ && r.doc_type !== typ) return false;
       if (cat && !(r.categories || '').includes(cat)) return false;
       if (kw) {
         const hay = `${r.title||''} ${r.institution||''} ${r.state||''} ${r.categories||''} ${r.watchlist_hits||''}`.toLowerCase();
@@ -594,7 +605,7 @@ HTML = r"""
 
   function clearOppFilters() {
     el('fScore').value = 0; el('fKeyword').value = ''; el('fCategory').value = '';
-    el('fFrom').value = ''; el('fTo').value = '';
+    el('fType').value = ''; el('fFrom').value = ''; el('fTo').value = '';
     applyOppFilters();
   }
 
@@ -603,7 +614,7 @@ HTML = r"""
       const tr = document.createElement('tr');
       const s = td(r.score); s.className = 'score';
       tr.appendChild(s);
-      tr.appendChild(td(Object.assign(document.createElement('span'), {className:'type', textContent:r.doc_type})));
+      tr.appendChild(td(Object.assign(document.createElement('span'), {className:'type', textContent:typeLabel(r.doc_type)})));
       tr.appendChild(td(`${r.state || ''} / ${r.institution || ''}`));
       tr.appendChild(td(link(r.url, r.title || '(untitled)')));
       const tags = document.createElement('span');
@@ -624,7 +635,7 @@ HTML = r"""
     const rows = await api().search(q, 100);
     renderTable('searchTable', ['Type', 'State / Institution', 'Title', 'Snippet'], rows, (r) => {
       const tr = document.createElement('tr');
-      tr.appendChild(td(Object.assign(document.createElement('span'), {className:'type', textContent:r.doc_type})));
+      tr.appendChild(td(Object.assign(document.createElement('span'), {className:'type', textContent:typeLabel(r.doc_type)})));
       tr.appendChild(td(`${r.state || ''} / ${r.institution || ''}`));
       tr.appendChild(td(link(r.url, r.title || '(untitled)')));
       tr.appendChild(td(r.snippet || ''));
