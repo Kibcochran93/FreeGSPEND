@@ -36,6 +36,11 @@ VALUE_HEADER_HINTS = ("contract value", "amount", "total value", "value")
 
 
 def scrape_contracts(transparency_source: dict, session, seen: set[str]) -> tuple[list[dict], list[dict]]:
+    # Socrata checkbook datasets are expenditure (payment) data, not
+    # contracts-with-date-ranges, so the contracts pass doesn't apply to them.
+    if transparency_source.get("type") == "socrata":
+        return [], []
+
     url = transparency_source["url"]
     contracts: list[dict] = []
 

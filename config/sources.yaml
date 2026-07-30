@@ -215,3 +215,29 @@ pennsylvania:
       url: "https://pennwatch.pa.gov/Spending/Payments"
       type: js_rendered
       notes: "Real search form with an Agency dropdown incl. 'System of Higher Education' (PASSHE), but results are AJAX-populated after submit."
+
+# --- Spending-intel sources: Socrata state checkbooks ----------------------
+# Not pilot college states - these are state open-data checkbooks with a real
+# Socrata API, queried server-side for watchlist vendor/competitor names
+# (case-insensitive, so ALL-CAPS vendor names still hit). No university_systems,
+# so only the transparency pass runs. Great for "which states already pay
+# Ellucian / EAB / Workday / etc." market intel.
+connecticut:
+  university_systems: []
+  transparency:
+    - name: "State of Connecticut Open Expenditures"
+      url: "https://data.ct.gov/d/jz5u-r6jf"
+      type: socrata
+      domain: data.ct.gov
+      dataset: jz5u-r6jf
+      notes: "Socrata vendor-level ledger; verified 'Ellucian' hits."
+
+delaware:
+  university_systems: []
+  transparency:
+    - name: "State of Delaware Checkbook"
+      url: "https://data.delaware.gov/d/cbcj-ys58"
+      type: socrata
+      domain: data.delaware.gov
+      dataset: cbcj-ys58
+      notes: "Socrata vendor-level checkbook; verified 'Ellucian' hits."

@@ -157,6 +157,37 @@ def test_xlsx_parsing_and_contract_detection():
     print("  OK - xlsx rows parse and feed the same contract column detection")
 
 
+def test_socrata_vendor_word_boundary():
+    print("[test] socrata vendor-column word-boundary matching ...")
+    from govspend_free import transparency_scraper as ts
+
+    class _Resp:
+        def __init__(self, data): self._d = data
+        def raise_for_status(self): pass
+        def json(self): return self._d
+
+    class _Sess:
+        def get(self, url, timeout=None, params=None, **kw):
+            p = params or {}
+            if p.get("$limit") == 1:  # column-detection sample
+                return _Resp([{"vendor": "X", "amount": "1"}])
+            w = (p.get("$where") or "").upper()
+            if "ELLUCIAN" in w:
+                return _Resp([{"vendor": "ELLUCIAN COMPANY LP", "amount": "100", "department": "CSU"}])
+            if "EAB" in w:  # substring-only false positive
+                return _Resp([{"vendor": "SEABOARD SUPPLY CO", "amount": "5"}])
+            return _Resp([])
+
+    src = {"type": "socrata", "domain": "d", "dataset": "ds", "url": "u"}
+    matches, _ = ts._scrape_socrata(src, _Sess(), set(), ["Ellucian", "EAB"])
+    hits = {m["watchlist_hits"][0] for m in matches}
+    assert "Ellucian" in hits          # real vendor kept
+    assert "EAB" not in hits           # "EAB" inside "SEABOARD" dropped by \b
+    ell = next(m for m in matches if m["watchlist_hits"] == ["Ellucian"])
+    assert ell["row"].startswith("ELLUCIAN COMPANY LP")  # row leads with vendor
+    print("  OK - vendor word-boundary filter + vendor-led rows")
+
+
 def test_contracts_content_based_dedup():
     print("[test] contracts_scraper content-based dedup (updated CSV re-parses) ...")
 

@@ -20,6 +20,7 @@ from __future__ import annotations
 import csv
 import hashlib
 import io
+import re
 
 from . import utils
 from .utils import log
@@ -30,6 +31,89 @@ DATA_EXTENSIONS = (".csv", ".xlsx", ".xls", ".pdf")
 # these avoids grabbing every "/downloads/" nav or brochure link.
 FORMAT_HINTS = ("csv", "excel", "xls", "spreadsheet", "data")
 MAX_FILES_PER_SOURCE = 15  # cap per source per run, be polite
+
+
+SOCRATA_ROWS_PER_TERM = 50  # rows to pull per watchlist term per dataset
+_VENDOR_COL_HINTS = ("vendor", "payee", "supplier", "recipient", "merchant", "company")
+
+
+def _detect_vendor_column(sample_row: dict) -> str | None:
+    for col in sample_row:
+        if any(hint in col.lower() for hint in _VENDOR_COL_HINTS):
+            return col
+    return None
+
+
+def _scrape_socrata(source: dict, session, seen: set[str], watchlist_terms: list[str]) -> tuple[list[dict], list[dict]]:
+    """Query a Socrata open-data dataset (e.g. a state checkbook) for each
+    watchlist term. When the dataset has a vendor column we match ON THAT COLUMN
+    with `$where ... like` (precise), instead of the tokenized full-text `$q`
+    that fires on "School Readiness"/"EDUCATION" for "Ready Education" and the
+    like. Case-insensitive on Socrata's side, so ALL-CAPS vendor names still
+    hit. Config needs `domain` + `dataset`; optional `app_token` for rate limit.
+    """
+    domain = source.get("domain")
+    dataset = source.get("dataset")
+    matches: list[dict] = []
+    if not domain or not dataset:
+        return matches, [{"url": source.get("url", ""), "reason": "socrata_misconfigured",
+                          "notes": "socrata source needs `domain` and `dataset`"}]
+    if not watchlist_terms:
+        return matches, [{"url": source.get("url", ""), "reason": "socrata_no_watchlist",
+                          "notes": "socrata sources search the watchlist; none configured"}]
+
+    api = f"https://{domain}/resource/{dataset}.json"
+    token = {"$$app_token": source["app_token"]} if source.get("app_token") else {}
+
+    # Detect the vendor column from a sample row so we can match precisely.
+    vendor_col = None
+    sample = utils.fetch(api, session=session, params={"$limit": 1, **token})
+    if sample is not None:
+        try:
+            sj = sample.json()
+            if sj:
+                vendor_col = _detect_vendor_column(sj[0])
+        except ValueError:
+            pass
+
+    for term in watchlist_terms:
+        if vendor_col:
+            safe = term.replace("'", "''")  # SoQL string-literal escaping
+            params = {"$where": f"upper({vendor_col}) like upper('%{safe}%')",
+                      "$limit": SOCRATA_ROWS_PER_TERM, **token}
+        else:
+            params = {"$q": term, "$limit": SOCRATA_ROWS_PER_TERM, **token}
+        resp = utils.fetch(api, session=session, params=params)
+        if resp is None:
+            continue
+        try:
+            rows = resp.json()
+        except ValueError:
+            continue
+        # `like '%term%'` is substring-only, so short terms (EAB) match inside
+        # unrelated vendor names (SEABOARD). Require a whole-word match on the
+        # vendor field - case-insensitive, since checkbook vendors are ALL CAPS.
+        term_re = re.compile(r"\b" + re.escape(term) + r"\b", re.IGNORECASE)
+        for row in rows:
+            vendor_val = str(row.get(vendor_col, "")) if vendor_col else ""
+            if vendor_col and not term_re.search(vendor_val):
+                continue
+            # Lead with the real vendor name so a human can tell a genuine hit
+            # ("SEATS SOFTWARE LIMITED") from a homograph ("VIVID SEATS") instantly.
+            rest = " ".join(str(v) for v in row.values() if v not in (None, ""))
+            row_text = f"{vendor_val} | {rest}" if vendor_val else rest
+            h = utils.item_hash("socrata", dataset, term, row_text)
+            if h in seen:
+                continue
+            seen.add(h)
+            matches.append({
+                "source_url": f"https://{domain}/d/{dataset}",
+                "file_url": f"https://{domain}/resource/{dataset}.csv?$q={term}",
+                "file_type": "socrata",
+                "watchlist_hits": [term],
+                "row": row_text[:300],
+            })
+    return matches, []
 
 
 def _is_data_download(href_lower: str, text_lower: str) -> bool:
@@ -44,6 +128,12 @@ def _is_data_download(href_lower: str, text_lower: str) -> bool:
 
 
 def scrape_transparency(source: dict, session, seen: set[str], watchlist_patterns) -> tuple[list[dict], list[dict]]:
+    # Socrata open-data portals expose a real API - query it for each watchlist
+    # term instead of scraping a page (see _scrape_socrata).
+    if source.get("type") == "socrata":
+        terms = [label for label, _ in watchlist_patterns]
+        return _scrape_socrata(source, session, seen, terms)
+
     url = source["url"]
     matches: list[dict] = []
     skipped: list[dict] = []
