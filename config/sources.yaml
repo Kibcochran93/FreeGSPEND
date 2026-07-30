@@ -47,6 +47,11 @@ arkansas:
       url: "https://uasys.edu/system-office/open-checkbook/"
       type: js_rendered
       notes: "Power BI embeds, not scrapable without a browser."
+  federal_grants:
+    - name: "USAspending federal student-success grants (AR)"
+      type: usaspending
+      state: AR
+      notes: "Dept. of Ed Title III/V, TRIO, GEAR UP awards to AR colleges. Keyless API, nationwide."
 
 texas:
   university_systems:
@@ -251,3 +256,38 @@ new_york:
       domain: data.ny.gov
       dataset: ehig-g5x3
       notes: "Socrata; public-authority procurement/vendor awards. Verified 'Ellucian'."
+
+# --- Core-territory federal-grant coverage (USAspending) -------------------
+# SEAtS's core sales territory has no scrapable state checkbook and thin board-
+# minutes coverage. USAspending's keyless nationwide API fills the gap with a
+# budget/initiative signal: federal Dept. of Ed student-success grants (Title
+# III/V, TRIO, GEAR UP) to colleges in each state. No university_systems here,
+# so only the federal pass runs. Add more states by copying a block.
+missouri:
+  university_systems: []
+  federal_grants:
+    - name: "USAspending federal student-success grants (MO)"
+      type: usaspending
+      state: MO
+      notes: "Verified: Lincoln U, Harris-Stowe, Mizzou System, Missouri State, Three Rivers College."
+
+oklahoma:
+  university_systems: []
+  federal_grants:
+    - name: "USAspending federal student-success grants (OK)"
+      type: usaspending
+      state: OK
+
+kansas:
+  university_systems: []
+  federal_grants:
+    - name: "USAspending federal student-success grants (KS)"
+      type: usaspending
+      state: KS
+
+nebraska:
+  university_systems: []
+  federal_grants:
+    - name: "USAspending federal student-success grants (NE)"
+      type: usaspending
+      state: NE

@@ -286,6 +286,33 @@ an expiration date for anything important.
 Run the tool once and read the `SKIPPED:` rows in your report - that's
 the most accurate live picture of coverage, since sites change.
 
+## Federal grants (USAspending) - nationwide, keyless, no wall
+
+The one spending feed that *does* cover the whole country - including the
+core sales territory (Missouri, Oklahoma, Kansas, Nebraska) where no state
+checkbook is scrapable. `usaspending_scraper.py` queries the U.S. Treasury's
+[USAspending API](https://api.usaspending.gov) (`type: usaspending` sources in
+`config/sources.yaml`) - free, **no API key**, no Tableau/WAF wall.
+
+It pulls federal **Dept. of Education student-success grants** to colleges in a
+state - Title III/V institutional aid, TRIO (Student Support Services, Talent
+Search, Upward Bound), GEAR UP, FIPSE (CFDA 84.031/042/044/047/066/116/334).
+Each award is stored as a `federal_award` document (recipient = the institution,
+tagged `Student Success & Retention`), so it flows straight into the
+Opportunities feed and Search - ranked lead-gen where SEAtS actually sells.
+
+```
+python main.py --state missouri     # ~120 MO higher-ed student-success grants
+```
+
+**What it is and isn't.** This is a *budget / mandate* signal - money earmarked
+for exactly SEAtS's ICP (retention, access, student success). It is **federal,
+not institutional procurement**, so it will *not* surface a university buying
+EAB/Ellucian (those are state/tuition-funded) - it complements the
+competitor-footprint intel from state checkbooks, it doesn't replace it. Only
+higher-ed recipients are kept (K-12 districts that also get TRIO/GEAR UP money
+are filtered out); pass `higher_ed_only: false` in a source to include everyone.
+
 ## Closing the JS-rendered gap (`--browser`, optional)
 
 `js_rendered` sources need a real browser, not just `requests`. That's now

@@ -24,6 +24,7 @@ from . import (
     contracts_scraper,
     db,
     transparency_scraper,
+    usaspending_scraper,
     utils,
 )
 from .utils import log
@@ -34,6 +35,7 @@ class ScrapeResult:
     bids: list = field(default_factory=list)
     minutes: list = field(default_factory=list)
     transparency: list = field(default_factory=list)
+    federal: list = field(default_factory=list)
     contracts: list = field(default_factory=list)
     contacts: list = field(default_factory=list)
     skipped: list = field(default_factory=list)
@@ -45,6 +47,7 @@ class ScrapeResult:
             "bids": len(self.bids),
             "minutes": len(self.minutes),
             "transparency": len(self.transparency),
+            "federal": len(self.federal),
             "contracts": len(self.contracts),
             "contracts_expiring_soon": sum(1 for c in self.contracts if c.get("expiring_soon")),
             "contacts": len(self.contacts),
@@ -108,6 +111,7 @@ def run_scrape(
     skip_bids: bool = False,
     skip_board_minutes: bool = False,
     skip_transparency: bool = False,
+    skip_federal: bool = False,
     skip_contracts: bool = False,
     skip_contacts: bool = False,
     criteria: "ScrapeCriteria | None" = None,
@@ -228,6 +232,27 @@ def run_scrape(
                         s.update(state=state_key, institution=t_src["name"], pass_type="contracts")
                     result.skipped.extend(contract_skipped)
 
+        if not skip_federal:
+            for f_src in state_cfg.get("federal_grants", []):
+                log.info("  [federal] %s -> USAspending", f_src.get("name", "federal grants"))
+                new_matches, skipped = usaspending_scraper.scrape_usaspending(
+                    f_src, session, seen, matchers, watchlist_patterns,
+                )
+                new_matches = [m for m in new_matches
+                               if criteria.keep(m["blob"], m.get("date"))]
+                for m in new_matches:
+                    m["state"] = state_key
+                    db.insert_document(
+                        conn, doc_type="federal_award", state=state_key,
+                        institution=m["institution"], title=m["title"],
+                        url=m["award_url"], text=m["blob"], date=m.get("date", ""),
+                        categories=m["categories"], watchlist_hits=m.get("watchlist_hits", []),
+                    )
+                result.federal.extend(new_matches)
+                for s in skipped:
+                    s.update(state=state_key, institution=f_src.get("name", ""), pass_type="federal")
+                result.skipped.extend(skipped)
+
     if not skip_contacts:
         log.info("\n=== CONTACTS (Apollo.io) ===")
         seen_apollo_ids = db.existing_apollo_ids(conn)
@@ -258,6 +283,13 @@ _REPORT_SPECS = {
         ["state", "institution", "watchlist_hits", "file_url", "matched_row"],
         lambda m: [m["state"], m["institution"], "; ".join(m.get("watchlist_hits", [])),
                    m.get("file_url", ""), m.get("row", "")],
+    ),
+    "federal": (
+        ["state", "institution", "program", "cfda", "amount", "agency",
+         "start_date", "end_date", "award_url"],
+        lambda m: [m["state"], m["institution"], m.get("program_title", ""), m.get("cfda", ""),
+                   m.get("amount_str", ""), m.get("agency", ""), m.get("start_date", ""),
+                   m.get("end_date", ""), m.get("award_url", "")],
     ),
     "contracts": (
         ["state", "institution", "vendor", "start_date", "end_date", "value",
@@ -331,6 +363,7 @@ def write_reports(result: ScrapeResult) -> list[Path]:
         "bids": result.bids,
         "board_minutes": result.minutes,
         "transparency": result.transparency,
+        "federal": result.federal,
         "contracts": result.contracts,
         "contacts": result.contacts,
         "skipped": result.skipped,
