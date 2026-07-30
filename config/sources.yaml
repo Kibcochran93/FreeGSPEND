@@ -227,25 +227,68 @@ pennsylvania:
 # (case-insensitive, so ALL-CAPS vendor names still hit). No university_systems,
 # so only the transparency pass runs. Great for "which states already pay
 # Ellucian / EAB / Workday / etc." market intel.
+# Socrata payments datasets with column mappings feed `--ingest-spend` (SODA ->
+# normalized `payments` table). higher_ed_in_scope means colleges appear as
+# paying departments, so competitor payments show up (displacement signal).
 connecticut:
   university_systems: []
   transparency:
-    - name: "State of Connecticut Open Expenditures"
-      url: "https://data.ct.gov/d/jz5u-r6jf"
+    - name: "State of Connecticut Open Expenditures - Ledger (current)"
+      url: "https://data.ct.gov/d/ajdm-rvz7"
       type: socrata
       domain: data.ct.gov
-      dataset: jz5u-r6jf
-      notes: "Socrata vendor-level ledger; verified 'Ellucian' hits."
+      dataset: ajdm-rvz7            # replaces deprecated jz5u-r6jf
+      vendor_col: vendor
+      amount_col: amount
+      date_col: payment_date
+      agency_col: department
+      higher_ed_in_scope: true
+      notes: "Verified: Ellucian via CSU-Western. Freshest of the set (payments within ~2 weeks)."
 
 delaware:
   university_systems: []
   transparency:
     - name: "State of Delaware Checkbook"
-      url: "https://data.delaware.gov/d/cbcj-ys58"
+      url: "https://data.delaware.gov/d/5s6n-7hpx"
       type: socrata
       domain: data.delaware.gov
-      dataset: cbcj-ys58
-      notes: "Socrata vendor-level checkbook; verified 'Ellucian' hits."
+      dataset: 5s6n-7hpx            # replaces archived cbcj-ys58
+      vendor_col: vendor
+      amount_col: amount
+      date_col: check_date
+      agency_col: department
+      higher_ed_in_scope: true
+      notes: "Verified: ELLUCIAN SUPPORT INC ($108k, dept HIGHER EDUCATION), EAB GLOBAL INC."
+
+massachusetts:
+  university_systems: []
+  transparency:
+    - name: "Massachusetts CTHRU Statewide Spending"
+      url: "https://cthru.data.socrata.com/d/pegc-naaa"
+      type: socrata
+      domain: cthru.data.socrata.com
+      dataset: pegc-naaa
+      vendor_col: vendor
+      amount_col: amount
+      date_col: date
+      agency_col: department
+      higher_ed_in_scope: true
+      notes: "Verified: Ellucian via Berkshire Community College. Refreshed ~Feb 2026 (staler than the rest)."
+
+maryland:
+  university_systems: []
+  transparency:
+    - name: "State of Maryland Payments Data"
+      url: "https://opendata.maryland.gov/d/7syw-q4cy"
+      type: socrata
+      domain: opendata.maryland.gov
+      dataset: 7syw-q4cy
+      vendor_col: vendor_name
+      amount_col: amount
+      date_col: date
+      agency_col: agency_name
+      higher_ed_in_scope: true
+      notes: "Verified: Ellucian + Anthology via Baltimore City Community College. vendor_name abbreviated. Spans 2008-2026."
 
 new_york:
   university_systems: []
@@ -255,7 +298,31 @@ new_york:
       type: socrata
       domain: data.ny.gov
       dataset: ehig-g5x3
-      notes: "Socrata; public-authority procurement/vendor awards. Verified 'Ellucian'."
+      higher_ed_in_scope: false
+      notes: "WEAK: public-authorities procurement only (no vendor_col mapped, so --ingest-spend skips it). Real NY statewide checkbook (OSC Open Book) is a ColdFusion form app with no API."
+
+# Market-intel-only Socrata checkbooks: Oracle appears, but zero Ellucian/
+# Anthology - these states' public universities buy OFF the state ledger, so
+# not SEAtS buyers. Datasets verified live; columns not yet mapped (no
+# vendor_col => --ingest-spend skips them until wired). See docs/SPENDING_SOURCES.md.
+new_jersey:
+  university_systems: []
+  transparency:
+    - {name: "NJ Transparency Center", url: "https://data.nj.gov/d/apet-rp2i", type: socrata,
+       domain: data.nj.gov, dataset: apet-rp2i, higher_ed_in_scope: false,
+       notes: "Market-intel only (Oracle, no Ellucian/Anthology). FY-aggregated."}
+oregon:
+  university_systems: []
+  transparency:
+    - {name: "Oregon Checkbook", url: "https://data.oregon.gov/d/y9g9-xsxs", type: socrata,
+       domain: data.oregon.gov, dataset: y9g9-xsxs, higher_ed_in_scope: false,
+       notes: "Market-intel only. Public universities off-ledger."}
+vermont:
+  university_systems: []
+  transparency:
+    - {name: "Vermont Spotlight Spending", url: "https://data.vermont.gov/d/786x-sbp3", type: socrata,
+       domain: data.vermont.gov, dataset: 786x-sbp3, higher_ed_in_scope: false,
+       notes: "Market-intel only. Quarter-aggregated."}
 
 # --- Core-territory federal-grant coverage (USAspending) -------------------
 # SEAtS's core sales territory has no scrapable state checkbook and thin board-
@@ -270,6 +337,10 @@ missouri:
       type: usaspending
       state: MO
       notes: "Verified: Lincoln U, Harris-Stowe, Mizzou System, Missouri State, Three Rivers College."
+  transparency:
+    - {name: "Missouri Accountability Portal", url: "https://data.mo.gov/d/fzgp-ixr3", type: socrata,
+       domain: data.mo.gov, dataset: fzgp-ixr3, higher_ed_in_scope: false,
+       notes: "Market-intel only (Oracle, no Ellucian/Anthology). Public universities off state ledger."}
 
 oklahoma:
   university_systems: []

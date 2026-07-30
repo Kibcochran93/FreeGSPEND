@@ -76,6 +76,18 @@ class Normalizer:
         self._prefix = [(c, disp, kind) for c, (disp, kind) in self._exact.items()
                         if c not in self._ambiguous]
 
+        # Raw terms to query a checkbook's vendor column for (one per canonical
+        # form; ambiguous short tokens like "SEATS" are dropped so we don't pull
+        # a flood of "VIVID SEATS" noise - the specific "SEATS SOFTWARE" stays).
+        self.search_terms: list[str] = []
+        _seen_canon: set[str] = set()
+        for alias in list(client_aliases) + list(competitors.keys()):
+            c = _canon(alias)
+            if not c or c in self._ambiguous or c in _seen_canon:
+                continue
+            _seen_canon.add(c)
+            self.search_terms.append(alias)
+
     # ------------------------------ vendor ------------------------------
 
     def vendor(self, raw: str) -> tuple[str | None, str]:
