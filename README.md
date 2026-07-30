@@ -19,7 +19,7 @@ machine, on whatever schedule you want. No subscription, no vendor lock-in
 | Record-Level Chat         | `llm.py` `--chat <id>` - REPL over one document                     | Anthropic API rates |
 | Dashboard                 | `--opportunities` (terminal) **or** the desktop UI (`govspend-free-ui`) | Free           |
 | Alerts                    | `alerts.py` - SMTP email digest after each run                      | Free (your own email account) |
-| CRM Integration           | not built - use the `reports/*/*.csv` files to import into your CRM manually | Free |
+| CRM Integration           | read-only HubSpot lookup in the Ops play; otherwise query `db/govspend_free.db` directly | Free |
 | Opportunities             | `opportunities.py` - rule-based scoring, not AI-ranked               | Free               |
 
 Everything free-tier runs with `pip install -r requirements.txt` and no
@@ -80,10 +80,10 @@ python main.py --quiet         # only warnings/errors; still prints the report +
 python main.py --verbose       # DEBUG-level logging
 ```
 
-This writes CSV reports split by type and state under `reports/` (see
-"Report files" below) AND persists everything into `db/govspend_free.db`
-(SQLite), which is what makes the next three commands possible - they read
-from that accumulated history, not just the latest run:
+Everything is persisted into `db/govspend_free.db` (SQLite) - the single source
+of truth. Nothing is dumped to CSV; the DB accumulates across runs, which is what
+makes the next three commands possible (they read all history, not just the
+latest run):
 
 ```bash
 python main.py --search "attendance software"     # full-text search everything ever scraped
@@ -91,26 +91,20 @@ python main.py --opportunities                    # ranked feed, scored by recen
 python main.py --expirations 90                   # contracts expiring within 90 days (default 180)
 ```
 
-### Report files
+### Where the data lives
 
-Each run writes CSV reports split by **type** and **state**, so you can hand a
-single category+state file straight to whoever needs it:
+One file: `db/govspend_free.db`. Browse it in the desktop UI (Opportunities /
+Search tabs), query it from the terminal with the commands above, or open it in
+any SQLite viewer / the `sqlite3` CLI:
 
-```
-reports/
-├── bids/           bids_texas_2026-07-29_143012.csv
-├── board_minutes/  board_minutes_arkansas_2026-07-29_143012.csv
-├── transparency/   transparency_california_2026-07-29_143012.csv
-├── contracts/      contracts_georgia_2026-07-29_143012.csv
-├── contacts/       contacts_texas_2026-07-29_143012.csv
-└── skipped/        skipped_florida_2026-07-29_143012.csv
+```bash
+sqlite3 db/govspend_free.db "SELECT doc_type, source, COUNT(*) FROM documents GROUP BY 1,2"
 ```
 
-Every file in one run shares the same timestamp, and each type gets its own
-columns (bids have `title/url/date`, contracts have `vendor/start/end/…`, etc.).
-Only passes that actually found something produce a file - no empty CSVs. The
-full accumulated history still lives in `db/govspend_free.db` for `--search` /
-`--opportunities`.
+Each row carries a `source` provenance tag (`bids` / `board_minutes` /
+`transparency` / `socrata` / `usaspending`) plus `scraped_at` / `updated_at`, and
+the `documents` table is indexed on the columns you filter by. (`reports/` still
+holds account briefs and Ops-play outputs - just no per-run CSV dumps.)
 
 ## Desktop UI (dashboard + scraping)
 
@@ -419,10 +413,10 @@ govspend_free/
 │   ├── test_offline.py             # bid/minutes scraping, no network
 │   ├── test_offline_extended.py    # db/contracts/opportunities, no network
 │   └── fixtures/
-├── db/govspend_free.db             # created on first real run
+├── db/govspend_free.db             # the single source of truth (created on first run)
 ├── state/seen.json                 # created on first real run (scrape dedup)
 ├── cache/pdfs/                     # downloaded minutes/transparency PDFs
-└── reports/<type>/<type>_<state>_<timestamp>.csv  # split per type + state
+└── reports/                        # account briefs + Ops-play outputs (no per-run CSVs)
 ```
 
 ## What this deliberately does NOT do
@@ -432,9 +426,9 @@ govspend_free/
   rolled up into its own report. Would be a straightforward addition if
   you want it: a `GROUP BY institution` query over `documents` +
   `contracts` + `contacts`.
-- No CRM push (Salesforce/HubSpot) - the `reports/*/*.csv` files are your export
-  path; import it manually, or add your CRM's API client if you want
-  automatic sync.
+- No automatic CRM push - query `db/govspend_free.db` (or the Ops play's
+  read-only HubSpot lookup) for what you need; add your CRM's API client if you
+  want automatic sync.
 - No unified search box across your browser - `--search` is a
   terminal command, not a web UI, matching the "standalone script I own"
   choice over a hosted dashboard.

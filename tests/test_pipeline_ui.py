@@ -8,12 +8,8 @@ their JSON-serializable output - is tested here.
 Run with: pytest tests/test_pipeline_ui.py   (or just `pytest`)
 """
 
-import csv
 import json
-import shutil
 import sqlite3
-import tempfile
-from pathlib import Path
 
 import pytest
 
@@ -30,12 +26,10 @@ def test_run_scrape_all_skipped_is_empty(tmp_conn):
         selected_state="texas",
         skip_bids=True, skip_board_minutes=True, skip_transparency=True,
         skip_contracts=True, skip_contacts=True,
-        write_report=False,
     )
     assert result.bids == [] and result.contracts == [] and result.skipped == []
-    assert result.report_paths == []
     counts = result.counts()
-    assert counts["bids"] == 0 and counts["reports"] == 0
+    assert counts["bids"] == 0
     json.dumps(counts)  # counts() must be JSON-serializable for the UI
 
 
@@ -106,46 +100,8 @@ def test_run_scrape_unknown_state_raises(tmp_conn):
             tmp_conn, {"texas": {}}, {"categories": {}, "watchlist": []},
             selected_state="atlantis",
             skip_bids=True, skip_board_minutes=True, skip_transparency=True,
-            skip_contracts=True, skip_contacts=True, write_report=False,
+            skip_contracts=True, skip_contacts=True,
         )
-
-
-def test_write_reports_splits_by_type_and_state(monkeypatch):
-    # Point REPORTS_DIR at a throwaway dir (not pytest's tmp_path, which is
-    # blocked in this sandbox) and check the per-type/per-state layout.
-    tmp = Path(tempfile.mkdtemp(prefix="gsf_reports_"))
-    try:
-        monkeypatch.setattr(utils, "REPORTS_DIR", tmp)
-        result = pipeline.ScrapeResult(
-            bids=[
-                {"state": "texas", "institution": "UT", "title": "RFP A", "source_url": "http://x/a",
-                 "detail_url": "http://x/a", "date": "", "categories": ["Retention"]},
-                {"state": "florida", "institution": "UF", "title": "RFP B", "source_url": "http://x/b",
-                 "detail_url": "", "date": "", "categories": ["Retention"]},
-            ],
-            contracts=[{"state": "texas", "institution": "UT", "vendor": "Acme", "start_date": "2024-01-01",
-                        "end_date": "2026-01-01", "value": "1", "days_until_expiration": 10,
-                        "expiring_soon": True, "source_url": "http://x/c"}],
-            skipped=[{"state": "texas", "institution": "UT", "reason": "needs_browser", "url": "http://x",
-                      "notes": "", "pass_type": "bids"}],
-        )
-        paths = pipeline.write_reports(result)
-        rel = sorted(p.relative_to(tmp).as_posix() for p in paths)
-
-        # bids split into two per-state files; contracts + skipped each get one.
-        assert len(paths) == 4
-        assert any(n.startswith("bids/bids_texas_") for n in rel)
-        assert any(n.startswith("bids/bids_florida_") for n in rel)
-        assert any(n.startswith("contracts/contracts_texas_") for n in rel)
-        assert any(n.startswith("skipped/skipped_texas_") for n in rel)
-
-        # Type-specific header + row content on the Texas bids file.
-        bids_tx = next(p for p in paths if "bids_texas_" in p.name)
-        rows = list(csv.reader(bids_tx.read_text(encoding="utf-8").splitlines()))
-        assert rows[0] == ["state", "institution", "categories", "title", "url", "date", "description"]
-        assert rows[1][0] == "texas" and rows[1][3] == "RFP A"
-    finally:
-        shutil.rmtree(tmp, ignore_errors=True)
 
 
 # ------------------------------ desktop.Api ------------------------------

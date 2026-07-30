@@ -27,15 +27,15 @@ Optional, needs your own SMTP credentials (config/alerts.yaml):
     Alerts are sent automatically after a scrape if enabled, or manually:
     python main.py --send-alerts-only   (re-sends a digest of the last run's results)
 
-Every scrape also still writes reports/report_<timestamp>.csv (unchanged
-format) alongside the new persistent SQLite DB at db/govspend_free.db.
+Every scrape persists everything into the SQLite DB at db/govspend_free.db,
+which is the single source of truth (query it with --search / --opportunities,
+the desktop UI, or any SQLite viewer).
 """
 
 from __future__ import annotations
 
 import argparse
 import datetime as dt
-import re
 import sys
 from pathlib import Path
 
@@ -91,7 +91,7 @@ def parse_args():
     p.add_argument("--ask", metavar="QUESTION", help="AI Search: ask a natural-language question over your local data (needs Anthropic API key)")
     p.add_argument("--chat", type=int, metavar="DOC_ID", help="Record-Level Chat REPL for one document id (needs Anthropic API key)")
     p.add_argument("--brief", metavar="DOC_ID_OR_INSTITUTION", help="Generate a SEAtS account brief for a scraped doc id or institution name (uses the local `claude` CLI, your Claude login)")
-    p.add_argument("--send-alerts-only", action="store_true", help="Send an email digest of the most recent report.csv, without scraping again")
+    p.add_argument("--send-alerts-only", action="store_true", help="Email a digest of the most recently scraped documents (from the DB), without scraping again")
     p.add_argument("--retag", action="store_true", help="Re-run keyword/watchlist matching over already-scraped documents with the current keywords.yaml, updating their tags (use after editing keywords)")
 
     p.add_argument("-q", "--quiet", action="store_true", help="Only log warnings/errors; still prints results (report path, summary, search output)")
@@ -173,7 +173,7 @@ def main():
         return
 
     if args.send_alerts_only:
-        _resend_last_report_digest()
+        _resend_last_report_digest(conn)
         return
 
     if args.retag:
@@ -218,35 +218,27 @@ def main():
     if not digest_sent:
         log.info("(Email digest not sent - see config/alerts.yaml.example to enable it.)")
 
-    if result.report_paths:
-        print(f"\n{len(result.report_paths)} report file(s) written under {utils.REPORTS_DIR}"
-              f" (one per type/state).")
+    print(f"\nEverything is stored in {utils.ROOT_DIR / 'db' / 'govspend_free.db'}.")
     print(f"Tip: run `python main.py --opportunities` to see everything ranked, "
-          f"or `python main.py --search \"term\"` to query what's in {utils.ROOT_DIR / 'db'}.")
+          f"or `python main.py --search \"term\"` to query it.")
 
 
-def _resend_last_report_digest():
-    # Reports are now split into reports/<type>/<type>_<state>_<timestamp>.csv.
-    # Re-send the most recent *run* - i.e. every file sharing the newest
-    # timestamp - concatenated into one digest body.
-    report_files = sorted(utils.REPORTS_DIR.glob("*/*.csv"))
-    if not report_files:
-        print("No reports found yet - run a scrape first.")
+def _resend_last_report_digest(conn):
+    """Email a digest built from the DB (the most recently scraped documents),
+    without scraping again. Reads straight from db/govspend_free.db - no CSVs."""
+    rows = pipeline.documents_since(conn, limit=200)
+    if not rows:
+        print("Nothing stored yet - run a scrape first.")
         return
 
-    def timestamp_of(path: Path) -> str:
-        m = re.search(r"_(\d{4}-\d{2}-\d{2}_\d{6})\.csv$", path.name)
-        return m.group(1) if m else ""
+    lines = [f"Digest of the {len(rows)} most recently scraped documents:\n"]
+    for r in rows:
+        lines.append(f"[{r['doc_type']}] {r['state']}/{r['institution']}: {r['title']}")
+        if r["url"]:
+            lines.append(f"    {r['url']}")
+    body = "\n".join(lines)[:20000]
 
-    latest_ts = max((timestamp_of(p) for p in report_files), default="")
-    run_files = [p for p in report_files if timestamp_of(p) == latest_ts] or [report_files[-1]]
-
-    parts = [f"Re-sending most recent report run ({latest_ts}), {len(run_files)} file(s):\n"]
-    for p in run_files:
-        parts.append(f"\n=== {p.parent.name}/{p.name} ===\n" + p.read_text(encoding="utf-8"))
-    body = "".join(parts)[:20000]
-
-    sent = alerts.send_digest(subject=f"govspend_free digest (resend) - {latest_ts}", body_text=body)
+    sent = alerts.send_digest(subject=f"govspend_free digest - {dt.datetime.now():%Y-%m-%d}", body_text=body)
     if not sent:
         print("Could not send - check config/alerts.yaml.")
 

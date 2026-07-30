@@ -807,8 +807,7 @@ HTML = r"""
         `Done - ${c.bids} bids, ${c.minutes} minutes, ${c.transparency} transparency, ` +
         `${c.federal} federal, ` +
         `${c.contracts} contracts (${c.contracts_expiring_soon} expiring soon), ${c.contacts} contacts, ` +
-        `${c.skipped} sources skipped.` +
-        (c.reports ? ` ${c.reports} report file(s) in ${c.reports_dir}` : '');
+        `${c.skipped} sources skipped. Stored in the database.`;
       el('runBtn').disabled = false;
       loadOpps();  // refresh the dashboard with anything new
     } else if (event === 'scrapeError') {

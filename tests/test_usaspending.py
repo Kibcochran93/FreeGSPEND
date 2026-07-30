@@ -125,7 +125,7 @@ def test_pipeline_stores_federal_award(tmp_conn, monkeypatch):
         tmp_conn, sources, {"categories": {}, "watchlist": []},
         selected_state="missouri",
         skip_bids=True, skip_board_minutes=True, skip_transparency=True,
-        skip_contracts=True, skip_contacts=True, write_report=False,
+        skip_contracts=True, skip_contacts=True,
     )
     assert len(result.federal) == 1
     assert result.counts()["federal"] == 1
@@ -152,7 +152,7 @@ def test_skip_federal_flag(tmp_conn, monkeypatch):
         tmp_conn, sources, {"categories": {}, "watchlist": []},
         selected_state="missouri", skip_bids=True, skip_board_minutes=True,
         skip_transparency=True, skip_federal=True, skip_contracts=True,
-        skip_contacts=True, write_report=False,
+        skip_contacts=True,
     )
     assert called["n"] == 0   # skip_federal short-circuits the pass entirely
 
