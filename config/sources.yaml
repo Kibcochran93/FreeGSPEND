@@ -241,3 +241,13 @@ delaware:
       domain: data.delaware.gov
       dataset: cbcj-ys58
       notes: "Socrata vendor-level checkbook; verified 'Ellucian' hits."
+
+new_york:
+  university_systems: []
+  transparency:
+    - name: "New York State Authorities Procurement"
+      url: "https://data.ny.gov/d/ehig-g5x3"
+      type: socrata
+      domain: data.ny.gov
+      dataset: ehig-g5x3
+      notes: "Socrata; public-authority procurement/vendor awards. Verified 'Ellucian'."
