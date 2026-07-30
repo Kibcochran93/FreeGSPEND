@@ -1,0 +1,24 @@
+# config/ops.yaml  (copy this to config/ops.yaml to override defaults)
+#
+# Deal context for the Ops "Full Motion" play. Everything here is optional -
+# with no ops.yaml at all, the defaults below are used. This file holds NO
+# secrets; the HubSpot token lives in config/hubspot.yaml (see
+# config/hubspot.yaml.example).
+
+client: SEAtS Software
+what_we_sell: >-
+  student attendance, engagement, retention and early-alert software for
+  higher education
+
+# Incumbents to treat as competitor pressure when they appear in board minutes
+# or spending records. (The client's own name, "SEAtS", is recognized
+# automatically and never counted as a competitor.)
+competitors:
+  - EAB
+  - Starfish
+  - Civitas
+  - Watermark
+  - Anthology
+  - Ellucian
+  - Jenzabar
+  - Workday Student

@@ -1,0 +1,27 @@
+# config/hubspot.yaml  (copy this to config/hubspot.yaml - it is gitignored)
+#
+# READ-ONLY HubSpot access for the Ops "Full Motion" play. The play cross-
+# references your CRM for pipeline status + decision-maker contacts. It never
+# writes anything back.
+#
+# Why a Private App token (not the HubSpot MCP / Claude connector)? HubSpot's
+# remote MCP server has no dynamic client registration, so the local `claude`
+# CLI can't self-authenticate to it and the desktop app can't ride the Claude
+# connection. A Private App token is static (doesn't expire) and scoped to
+# exactly the read permissions this needs.
+#
+# SETUP (about 2 minutes):
+#   1. HubSpot > Settings (gear) > Integrations > Private Apps > Create a
+#      private app. Name it e.g. "GovSpend Free (read-only)".
+#   2. On the Scopes tab, grant ONLY these three read scopes:
+#         crm.objects.companies.read
+#         crm.objects.contacts.read
+#         crm.objects.deals.read
+#      (Do not grant any write scopes - the play doesn't use them.)
+#   3. Create the app, then copy the Access token (starts with "pat-").
+#   4. Paste it below as `token:` and save this file as config/hubspot.yaml.
+#
+# Alternatively, set it in the environment instead of this file:
+#   HUBSPOT_TOKEN=pat-na1-...   (or HUBSPOT_PRIVATE_APP_TOKEN)
+
+token: pat-na1-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx

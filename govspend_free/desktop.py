@@ -26,7 +26,7 @@ from pathlib import Path
 
 import yaml
 
-from . import brief, db, opportunities, pipeline, utils
+from . import brief, db, opportunities, ops, pipeline, utils
 from .utils import log
 
 CONFIG_DIR = utils.ROOT_DIR / "config"
@@ -46,6 +46,7 @@ class Api:
         self._window = None
         self._scraping = False
         self._briefing = False
+        self._playing = False
 
     def set_window(self, window) -> None:
         self._window = window
@@ -173,6 +174,39 @@ class Api:
             pkg_logger.removeHandler(handler)
             self._briefing = False
 
+    # ------------------------- Ops: Full Motion play -------------------------
+
+    def ops_status(self) -> dict:
+        """Is the read-only HubSpot path ready? Drives the button's gate."""
+        return ops.hubspot_status()
+
+    def run_play(self) -> dict:
+        """Kick off the Full Motion play on a worker thread. Progress streams
+        back via onPyEvent('playLog'/'playDone'/'playError')."""
+        if self._playing:
+            return {"started": False, "error": "The play is already running."}
+        self._playing = True
+        threading.Thread(target=self._play_worker, daemon=True).start()
+        return {"started": True}
+
+    def _play_worker(self) -> None:
+        try:
+            result = ops.run_full_motion_play(
+                on_progress=lambda line: self._emit("playLog", {"line": line}),
+            )
+            if result["ok"]:
+                self._emit("playDone", {
+                    "markdown": result["markdown"],
+                    "report_path": result["report_path"],
+                })
+            else:
+                self._emit("playError", {"error": result["error"] or "Unknown error."})
+        except Exception as exc:  # never let the worker die silently
+            log.error("Full Motion play failed: %s", exc)
+            self._emit("playError", {"error": str(exc)})
+        finally:
+            self._playing = False
+
     def _emit(self, event: str, payload: dict) -> None:
         if self._window is not None:
             self._window.evaluate_js(f"window.onPyEvent({json.dumps(event)}, {json.dumps(payload)})")
@@ -270,11 +304,18 @@ HTML = r"""
   .soon { color: var(--soon); font-weight: 700; background: var(--soon-bg); padding: 1px 6px; border-radius: 6px; }
   .empty { color: var(--muted); padding: 24px 8px; text-align: center; }
   .hint { color: var(--muted); font-size: 12px; margin: 2px 0 0; }
-  #scrapeLog {
+  #scrapeLog, #playLog {
     margin-top: 14px; background: #0f172a; color: #cbd5e1; border-radius: 8px;
     padding: 12px; height: 260px; overflow: auto; white-space: pre-wrap;
     font: 12px/1.5 "Cascadia Code", Consolas, monospace;
   }
+  #playResult { margin-top: 12px; overflow-x: auto; }
+  #playResult h1, #playResult h2, #playResult h3 { font-size: 15px; margin: 14px 0 4px; }
+  #playResult ol, #playResult ul { margin: 6px 0 6px 18px; }
+  #playResult td { font-size: 12.5px; }
+  .gate-warn { color: #92400e; background: #fffbeb; border: 1px solid #fde68a;
+    border-radius: 8px; padding: 10px 12px; }
+  .gate-ok { color: #15803d; }
   .status { margin-top: 10px; font-size: 13px; }
   .status.ok { color: #15803d; } .status.err { color: var(--soon); }
   .hidden { display: none !important; }  /* must beat .overlay's display:flex */
@@ -317,6 +358,7 @@ HTML = r"""
     <button class="tab active" data-tab="opps">Opportunities</button>
     <button class="tab" data-tab="search">Search</button>
     <button class="tab" data-tab="exp">Expirations</button>
+    <button class="tab" data-tab="ops">Ops</button>
     <button class="tab" data-tab="scrape">Scrape</button>
   </nav>
 
@@ -363,6 +405,31 @@ HTML = r"""
           <button class="primary" onclick="loadExp()">Show</button>
         </div>
         <div id="expTable"></div>
+      </div>
+    </section>
+
+    <!-- Ops -->
+    <section id="tab-ops" class="tabpane hidden">
+      <div class="panel">
+        <div class="row">
+          <strong>Full Motion</strong>
+          <span class="chip" style="background:#fef3c7;color:#92400e">FLAGSHIP</span>
+          <span class="spacer" style="flex:1"></span>
+          <button class="primary" id="playBtn" onclick="runPlay()">Run Full Motion play</button>
+        </div>
+        <p class="hint">
+          The entire prospecting motion in one run: scores every account with a
+          signal 0&ndash;100, checks CRM status, pulls the decision-maker, and drafts a
+          spend-grounded opener. CRM data is read <strong>read-only</strong> via a HubSpot
+          Private App token (config/hubspot.yaml) &mdash; nothing is written back.
+        </p>
+        <div id="opsGate" class="status"></div>
+        <div id="playStatus" class="status"></div>
+        <div id="playResult"></div>
+        <details style="margin-top:12px">
+          <summary class="hint" style="cursor:pointer">Run log</summary>
+          <div id="playLog"></div>
+        </details>
       </div>
     </section>
 
@@ -431,6 +498,7 @@ HTML = r"""
     t.classList.add('active');
     document.querySelectorAll('.tabpane').forEach(p => p.classList.add('hidden'));
     el('tab-' + t.dataset.tab).classList.remove('hidden');
+    if (t.dataset.tab === 'ops') checkOpsGate();
   });
 
   // ---- helpers ----
@@ -581,6 +649,82 @@ HTML = r"""
     });
   }
 
+  // ---- Ops: Full Motion play ----
+  // Minimal, safe markdown renderer: only pipe-tables, headings, and list
+  // items. Everything goes through textContent, so no HTML injection from the
+  // play's output. Enough to render the ranked table + top plays.
+  function renderMarkdown(mount, md) {
+    const m = el(mount); m.innerHTML = '';
+    const lines = (md || '').split('\n');
+    let i = 0;
+    const isTableSep = (s) => /^\s*\|?[\s:|-]+\|[\s:|-]*$/.test(s) && s.includes('-');
+    const cells = (s) => s.replace(/^\s*\|/, '').replace(/\|\s*$/, '').split('|').map(c => c.trim());
+    while (i < lines.length) {
+      const line = lines[i];
+      if (line.includes('|') && i + 1 < lines.length && isTableSep(lines[i + 1])) {
+        const header = cells(line);
+        i += 2;
+        const body = [];
+        while (i < lines.length && lines[i].includes('|') && lines[i].trim()) { body.push(cells(lines[i])); i++; }
+        const table = document.createElement('table');
+        const thead = document.createElement('thead'), htr = document.createElement('tr');
+        header.forEach(h => { const th = document.createElement('th'); th.textContent = h; htr.appendChild(th); });
+        thead.appendChild(htr); table.appendChild(thead);
+        const tb = document.createElement('tbody');
+        body.forEach(r => {
+          const tr = document.createElement('tr');
+          r.forEach(c => { const cell = document.createElement('td'); cell.textContent = c; tr.appendChild(cell); });
+          tb.appendChild(tr);
+        });
+        table.appendChild(tb); m.appendChild(table);
+        continue;
+      }
+      const h = line.match(/^(#{1,3})\s+(.*)$/);
+      if (h) { const el2 = document.createElement('h' + h[1].length); el2.textContent = h[2]; m.appendChild(el2); i++; continue; }
+      const li = line.match(/^\s*(?:[-*]|\d+\.)\s+(.*)$/);
+      if (li) {
+        const ul = document.createElement('ul');
+        while (i < lines.length) {
+          const mm = lines[i].match(/^\s*(?:[-*]|\d+\.)\s+(.*)$/);
+          if (!mm) break;
+          const item = document.createElement('li'); item.textContent = mm[1]; ul.appendChild(item); i++;
+        }
+        m.appendChild(ul); continue;
+      }
+      if (line.trim()) { const p = document.createElement('p'); p.textContent = line; m.appendChild(p); }
+      i++;
+    }
+  }
+
+  async function checkOpsGate() {
+    const gate = el('opsGate');
+    let st;
+    try { st = await api().ops_status(); } catch (e) { st = { ok: false, reason: String(e) }; }
+    if (st.ok) {
+      gate.className = 'status'; gate.innerHTML = '';
+      el('playBtn').disabled = false;
+    } else {
+      gate.className = 'status';
+      gate.innerHTML = '<div class="gate-warn"><strong>HubSpot read access not configured.</strong><br>' +
+        String(st.reason).replace(/</g, '&lt;') + '</div>';
+      el('playBtn').disabled = true;
+    }
+  }
+
+  async function runPlay() {
+    el('playBtn').disabled = true;
+    el('playStatus').className = 'status';
+    el('playStatus').textContent = 'Running the Full Motion play (read-only)...';
+    el('playResult').innerHTML = '';
+    el('playLog').textContent = '';
+    const res = await api().run_play();
+    if (!res.started) {
+      el('playStatus').className = 'status err';
+      el('playStatus').textContent = res.error || 'Could not start.';
+      el('playBtn').disabled = false;
+    }
+  }
+
   // ---- Scrape ----
   window.appendLog = (line) => {
     const box = el('scrapeLog');
@@ -588,7 +732,20 @@ HTML = r"""
     box.scrollTop = box.scrollHeight;
   };
   window.onPyEvent = (event, payload) => {
-    if (event === 'scrapeDone') {
+    if (event === 'playLog') {
+      const box = el('playLog');
+      box.textContent += (payload.line + '\n');
+      box.scrollTop = box.scrollHeight;
+    } else if (event === 'playDone') {
+      el('playStatus').className = 'status ok';
+      el('playStatus').textContent = 'Done.' + (payload.report_path ? ' Saved: ' + payload.report_path : '');
+      renderMarkdown('playResult', payload.markdown);
+      el('playBtn').disabled = false;
+    } else if (event === 'playError') {
+      el('playStatus').className = 'status err';
+      el('playStatus').textContent = 'Error: ' + payload.error;
+      el('playBtn').disabled = false;
+    } else if (event === 'scrapeDone') {
       const c = payload;
       el('scrapeStatus').className = 'status ok';
       el('scrapeStatus').textContent =

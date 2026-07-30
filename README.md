@@ -123,15 +123,52 @@ pip install -e ".[ui]"     # installs pywebview
 govspend-free-ui           # (or: python -m govspend_free.desktop)
 ```
 
-It opens a window with four tabs:
+It opens a window with five tabs:
 
 - **Opportunities** - the ranked feed (same scoring as `--opportunities`), click a title to open it. Each row has a **Brief** button that generates an account brief for that document (see "Account briefs" below).
 - **Search** - full-text search over everything ever scraped (same index as `--search`).
 - **Expirations** - contracts expiring within N days, with the soon-to-expire ones flagged.
+- **Ops** - the **Full Motion** account-prioritization play (see below).
 - **Scrape** - pick a state (or all), toggle which passes to run, hit **Run scrape**, and watch the log stream live. When it finishes, the Opportunities tab refreshes automatically.
 
 Apollo contacts are **off by default** in the UI (they cost credits) - tick
 "include Apollo contacts" to opt in, and only if `config/apollo.yaml` is set up.
+
+## Ops: the "Full Motion" play (CRM-grounded prospecting)
+
+The **Ops** tab has one flagship button, **Run Full Motion play**. In a single
+run it scores every account that has a signal in your local DB 0-100, checks
+each one's CRM status (In Pipeline / Cold / Whitespace), pulls the
+decision-maker, and drafts a spend-grounded opener - the whole prospecting
+motion, ranked, top-down. Also runnable from the terminal:
+
+```
+python main.py --play
+```
+
+Both halves are deterministic and inspectable (no LLM, same philosophy as
+`opportunities.py`): signals are extracted offline from `db/govspend_free.db`,
+and CRM status + contacts come from HubSpot's REST API, **read-only**, via
+`hubspot_client.py` (which has no create/update/delete methods). The 0-100 score
+is transparent arithmetic; openers are templated from each account's real signal
+(never a fabricated number).
+
+**One-time setup - a read-only HubSpot Private App token:**
+
+1. HubSpot > Settings > Integrations > **Private Apps** > *Create a private app*.
+2. Grant **only** these read scopes: `crm.objects.companies.read`,
+   `crm.objects.contacts.read`, `crm.objects.deals.read`.
+3. Copy the access token (`pat-...`) into `config/hubspot.yaml`
+   (`cp config/hubspot.yaml.example config/hubspot.yaml`), or set `HUBSPOT_TOKEN`.
+
+Until a valid token is present the button stays disabled and says so. Copy
+`config/ops.yaml.example` to `config/ops.yaml` to change the client/competitor
+context. Reports are saved to `reports/ops/full_motion_<timestamp>.md`.
+
+(Why a Private App token and not the HubSpot MCP / Claude connector? HubSpot's
+remote MCP has no dynamic client registration, so the local `claude` CLI can't
+self-authenticate to it - a static, read-scoped Private App token is the
+reliable path.)
 
 On **Windows** this uses the built-in Edge WebView2 runtime, which ships with
 Windows 11 - no extra install. (On macOS/Linux, pywebview uses the system

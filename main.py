@@ -47,6 +47,7 @@ from govspend_free import (
     db,
     llm,
     opportunities,
+    ops,
     pipeline,
     utils,
 )
@@ -81,6 +82,7 @@ def parse_args():
     # Query-only modes (no scraping, read from the local DB)
     p.add_argument("--search", metavar="QUERY", help="Full-text search everything ever scraped, then exit")
     p.add_argument("--opportunities", action="store_true", help="Print the ranked opportunities feed, then exit")
+    p.add_argument("--play", action="store_true", help="Run the Ops 'Full Motion' account-prioritization play (read-only HubSpot via a Private App token), then exit")
     p.add_argument("--expirations", type=int, nargs="?", const=180, metavar="DAYS",
                     help="Print contracts expiring within DAYS (default 180), then exit")
     p.add_argument("--ask", metavar="QUESTION", help="AI Search: ask a natural-language question over your local data (needs Anthropic API key)")
@@ -124,6 +126,16 @@ def main():
 
     if args.opportunities:
         opportunities.print_opportunities(opportunities.rank_opportunities(conn))
+        return
+
+    if args.play:
+        result = ops.run_full_motion_play(on_progress=lambda line: log.info("%s", line), conn=conn)
+        if result["ok"]:
+            print("\n" + (result["markdown"] or "(no output)"))
+            print(f"\nSaved to {result['report_path']}")
+        else:
+            log.error("%s", result["error"])
+            sys.exit(1)
         return
 
     if args.expirations is not None:
