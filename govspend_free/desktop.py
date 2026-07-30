@@ -115,6 +115,7 @@ class Api:
                     skip_bids=options.get("skip_bids", False),
                     skip_board_minutes=options.get("skip_board_minutes", False),
                     skip_transparency=options.get("skip_transparency", False),
+                    skip_federal=options.get("skip_federal", False),
                     skip_contracts=options.get("skip_contracts", False),
                     # Apollo costs credits and needs config - opt in explicitly.
                     skip_contacts=options.get("skip_contacts", True),
@@ -443,6 +444,7 @@ HTML = r"""
           <label class="chk"><input type="checkbox" id="skip_bids"> skip bids</label>
           <label class="chk"><input type="checkbox" id="skip_board_minutes"> skip minutes</label>
           <label class="chk"><input type="checkbox" id="skip_transparency"> skip transparency</label>
+          <label class="chk"><input type="checkbox" id="skip_federal"> skip federal</label>
           <label class="chk"><input type="checkbox" id="skip_contracts"> skip contracts</label>
           <label class="chk"><input type="checkbox" id="inc_contacts"> include Apollo contacts (uses credits)</label>
           <label class="chk"><input type="checkbox" id="use_browser"> render JS sources (headless browser, slower)</label>
@@ -750,6 +752,7 @@ HTML = r"""
       el('scrapeStatus').className = 'status ok';
       el('scrapeStatus').textContent =
         `Done - ${c.bids} bids, ${c.minutes} minutes, ${c.transparency} transparency, ` +
+        `${c.federal} federal, ` +
         `${c.contracts} contracts (${c.contracts_expiring_soon} expiring soon), ${c.contacts} contacts, ` +
         `${c.skipped} sources skipped.` +
         (c.reports ? ` ${c.reports} report file(s) in ${c.reports_dir}` : '');
@@ -807,6 +810,7 @@ HTML = r"""
       skip_bids: el('skip_bids').checked,
       skip_board_minutes: el('skip_board_minutes').checked,
       skip_transparency: el('skip_transparency').checked,
+      skip_federal: el('skip_federal').checked,
       skip_contracts: el('skip_contracts').checked,
       skip_contacts: !el('inc_contacts').checked,
       date_from: el('scrape_from').value,

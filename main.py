@@ -67,6 +67,7 @@ def parse_args():
     p.add_argument("--state", help="Only scan this state key from sources.yaml (e.g. arkansas)")
     p.add_argument("--list-states", action="store_true", help="List configured state keys and exit")
     p.add_argument("--skip-transparency", action="store_true")
+    p.add_argument("--skip-federal", action="store_true", help="Skip the USAspending federal-grant pass")
     p.add_argument("--skip-board-minutes", action="store_true")
     p.add_argument("--skip-bids", action="store_true")
     p.add_argument("--skip-contracts", action="store_true")
@@ -187,6 +188,7 @@ def main():
             skip_bids=args.skip_bids,
             skip_board_minutes=args.skip_board_minutes,
             skip_transparency=args.skip_transparency,
+            skip_federal=args.skip_federal,
             skip_contracts=args.skip_contracts,
             skip_contacts=args.skip_contacts,
             criteria=pipeline.ScrapeCriteria.build(
@@ -251,6 +253,7 @@ def _print_summary(result: pipeline.ScrapeResult):
     print(f"New bid matches:            {c['bids']}")
     print(f"New board-minutes matches:  {c['minutes']}")
     print(f"New transparency matches:   {c['transparency']}")
+    print(f"New federal grant awards:   {c['federal']}")
     print(f"New contract records:       {c['contracts']} ({c['contracts_expiring_soon']} expiring soon)")
     print(f"New contacts (Apollo):      {c['contacts']}")
     print(f"Sources skipped:            {c['skipped']}")

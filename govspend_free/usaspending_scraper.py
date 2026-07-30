@@ -73,6 +73,30 @@ def _looks_higher_ed(name: str) -> bool:
     return bool(_HIGHER_ED_RE.search(name or "")) and not _NOT_HIGHER_ED_RE.search(name or "")
 
 
+# USAspending returns recipient names in ALL CAPS ("LINCOLN UNIVERSITY"). Title-
+# case them so they read like the rest of the institutions, while keeping small
+# connector words lowercase and common university acronyms upper.
+_SMALL_WORDS = {"of", "the", "and", "for", "at", "in", "on", "to", "a", "an", "de", "del"}
+_KEEP_UPPER = {"SUNY", "CUNY", "UNC", "UNLV", "UTEP", "LSU", "CSU", "SIU", "IUPUI",
+               "USC", "UCLA", "MIT", "TCU", "SMU", "UAB", "UTSA", "VCU", "ECU",
+               "NYU", "UNO", "UNT", "UTA", "A&M", "A&T"}
+
+
+def _titlecase(name: str) -> str:
+    words = (name or "").split()
+    out = []
+    for i, w in enumerate(words):
+        if w.upper() in _KEEP_UPPER:
+            out.append(w.upper())
+        elif "-" in w:
+            out.append("-".join(p.capitalize() for p in w.split("-")))
+        elif i != 0 and w.lower() in _SMALL_WORDS:
+            out.append(w.lower())
+        else:
+            out.append(w.capitalize())
+    return " ".join(out)
+
+
 def _default_time_period(years: int) -> dict:
     end = dt.date.today()
     start = end.replace(year=end.year - years)
@@ -133,6 +157,7 @@ def scrape_usaspending(source: dict, session, seen: set[str],
                 continue
             if higher_ed_only and not _looks_higher_ed(recipient):
                 continue
+            recipient = _titlecase(recipient)   # "LINCOLN UNIVERSITY" -> "Lincoln University"
 
             award_id = r.get("Award ID") or r.get("generated_internal_id") or ""
             key = utils.item_hash("usaspending", state, str(award_id), recipient)

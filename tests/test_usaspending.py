@@ -50,6 +50,21 @@ def test_requires_state():
     assert matches == [] and skipped and skipped[0]["reason"] == "usaspending_misconfigured"
 
 
+def test_titlecase_normalizes_shouty_names():
+    assert usa._titlecase("LINCOLN UNIVERSITY") == "Lincoln University"
+    assert usa._titlecase("THE CURATORS OF THE UNIVERSITY OF MISSOURI") == \
+        "The Curators of the University of Missouri"
+    assert usa._titlecase("HARRIS-STOWE STATE UNIVERSITY") == "Harris-Stowe State University"
+    assert usa._titlecase("SUNY RESEARCH FOUNDATION") == "SUNY Research Foundation"  # acronym kept
+
+
+def test_allcaps_recipient_is_titlecased(monkeypatch):
+    monkeypatch.setattr(usa, "_request_page",
+                        lambda *a, **k: _page([_award("LINCOLN UNIVERSITY")]))
+    matches, _ = usa.scrape_usaspending({"state": "MO"}, None, set(), *_matchers())
+    assert matches[0]["institution"] == "Lincoln University"
+
+
 def test_higher_ed_filter_drops_k12(monkeypatch):
     page = _page([
         _award("Lincoln University", gid="U1", award_id="A1"),
