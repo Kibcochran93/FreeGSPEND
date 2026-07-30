@@ -142,13 +142,15 @@ watchlist:
   - "SEAtS Software"
   - "SEAtS ONE"
 
-  # Student-success / retention competitors
+  # Student-success / retention competitors.
+  # NOTE: use distinctive vendor forms - bare common-word names ("Starfish",
+  # "Watermark") match unrelated companies in checkbook vendor fields
+  # (Camp Starfish, Vivid Seats). EAB Navigate absorbed the Starfish product.
   - "Civitas"
   - "Civitas Learning"
-  - "Starfish"
   - "EAB"
   - "EAB Navigate"
-  - "Watermark"
+  - "Watermark Insights"
   - "Engage2Serve"
   - "Anthology"
 
