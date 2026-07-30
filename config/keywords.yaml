@@ -1,118 +1,141 @@
-# Keyword taxonomy used to classify bid postings and to keyword-search
-# board minutes / transparency data. Edit freely - categories are just
-# labels, matching is plain case-insensitive substring/regex matching
-# (see govspend_free/utils.py: match_categories()).
+# Keyword taxonomy for classifying bids/RFPs, board minutes, and transparency
+# data. Matching is case-insensitive substring (utils.match_categories).
+#
+# Tuned from the SEAtS US Market Intelligence findings (Jul 2026, 16 board
+# transcripts / ~338k words). Core lesson: US boards use OPERATIONAL vocabulary,
+# not UK/vendor jargon. So this list drops the generic single words that caused
+# false positives ("scheduling", "engagement") and the zero-occurrence vendor
+# terms ("timetabling", "attendance monitoring", "student CRM"), and adds the
+# specific phrases institutions actually used. Rule of thumb: prefer specific
+# multi-word phrases - they add signal without the noise bare words create.
+#
+# Note the board-vs-RFP split: minutes use colloquial terms (persistence,
+# utilization, positive attendance); RFPs/bids use formal vendor language
+# (student information system, early alert). A few formal terms are kept
+# because they still matter for the bids pass even though they're rare in
+# minutes - they're specific enough not to create noise.
 
 categories:
   student_success_retention:
     label: "Student Success & Retention"
     keywords:
+      - retention                    # travels intact US<->UK; top success term
+      - persistence                  # evidenced in 7 of 16 institutions
+      - completion
+      - "student success"
       - advising
       - "academic advising"
-      - persistence
-      - retention
-      - wellness
-      - "early alert"
-      - "case management"
-      - "predictive analytics"
-      - engagement
-      - intervention
-      - "student success"
+      - "success team"               # Cerritos: "success teams / success coaches"
+      - "success coach"
+      - "progress check"             # U of Oregon: "three/five-year progress checks"
+      - "guided pathways"
+      - "strategic enrollment management"
+      - "early alert"                # vendor term: kept for RFPs, ~absent in minutes
       - "student success platform"
 
   academic_space_scheduling:
     label: "Academic & Space Scheduling"
     keywords:
-      - scheduling
-      - timetabling
       - "course scheduling"
+      - "section scheduling"
+      - "class schedule"
       - "room scheduling"
-      - "campus scheduling"
+      - "space utilization"          # richest evidenced theme (9x across 3 schools)
       - "classroom utilization"
-      - "space optimization"
+      - "utilization report"
+      - "utilization study"
       - "space management"
+      - "space optimization"
+      - "fill rate"                  # Joliet hand-reviews sections <50% filled
+      - "block scheduling"           # MSU Denver
+      - "master plan"                # Washtenaw 10-year facilities master plan
 
   attendance_compliance:
     label: "Attendance & Compliance"
     keywords:
       - "attendance tracking"
       - "attendance verification"
-      - "attendance management"
+      - "positive attendance"        # CA funding term (credit + non-credit)
+      - "census date"                # FTES counted from census dates
+      - "full-time equivalent"
+      - FTES
+      - "attendance-based funding"
+      - "enrollment reporting"       # El Paso CC audited its enrollment reporting
+      - "student centered funding formula"
+      - apportionment
       - "title iv"
-      - "compliance reporting"
-      - "engagement monitoring"
-      - "last date of attendance"
+      - "last date of attendance"    # formal/RFP term; absent from minutes
       - "roster verification"
-      - "sevis compliance"
       - sevis
 
-  ai_chatbot_messaging:
-    label: "AI Chatbot & Messaging"
+  student_communication:
+    label: "Student Communication"
     keywords:
-      - chatbot
-      - "conversational ai"
+      - "student communication"      # North Idaho / City College phrasing
       - "student messaging"
-      - "text messaging"
-      - sms
+      - "conversational ai"
+      - chatbot
       - "virtual assistant"
-      - "student communications"
+      - "mass notification"
 
   sis_erp_migration:
     label: "SIS / ERP Migration"
     keywords:
       - "sis migration"
       - "erp modernization"
-      - "erp assessment"
       - "enterprise resource planning"
       - "student information system"
       - "curriculum management"
       - banner
       - "workday student"
+      - workday                      # MSU Denver named Workday for ERP
       - colleague
       - jenzabar
       - peoplesoft
       - ellucian
 
-  # --- Deal-trigger signals from the SEAtS GTM playbook ---------------------
-  # These are the "problems that create a deal" - accreditation timing and
-  # compliance/reporting pain - not product categories. A board-minutes doc
-  # hitting these plus a product category above is a high-fit account.
   accreditation_effectiveness:
     label: "Accreditation & Institutional Effectiveness"
     keywords:
       - accreditation
       - reaffirmation
       - "self-study"
-      - "self study"
-      - "site visit"
-      - "institutional effectiveness"
+      - "self-evaluation report"     # Cerritos ISER cycle
       - "program review"
-      - "assurance argument"
+      - "program assessment"         # U of Oregon renamed its decennial review
+      - "institutional effectiveness"
+      - "student achievement"        # accreditors examine student-achievement metrics
+      - "regular and substantive interaction"  # RSI - SEAtS is evidence-adjacent only
+      - "distance education"
       - SACSCOC
+      - ACCJC
       - NWCCU
       - WSCUC
-      - "middle states"
 
   institutional_research_reporting:
-    label: "Institutional Research & Mandatory Reporting"
+    label: "Institutional Research & Reporting"
     keywords:
       - IPEDS
       - "institutional research"
-      - "state reporting"
-      - "federal reporting"
       - "mandatory reporting"
+      - "state reporting"
       - "data governance"
-      - "return of title iv"
       - "financial aid audit"
 
-# Free-text vendor / product watchlist. These terms are searched for
-# specifically in board meeting minutes text and (where scrapable)
-# transparency/vendor payment data, separate from the bid categories above.
-#
-# NOTE: watchlist matching is CASE-SENSITIVE and word-boundaried (unlike the
-# categories above), so "SEAtS" matches the brand but not the word "seats".
-# Use the real casing of each name. All-caps mentions won't match unless you
-# add that casing explicitly.
+  budget_enrollment_pressure:
+    label: "Budget & Enrollment Pressure"
+    keywords:
+      - "enrollment cliff"           # 5x across 3 schools; shared reference point
+      - "structural deficit"         # Joliet projected ~$900k/yr
+      - "outcomes-based funding"     # Texas model (El Paso CC)
+      - "appropriation reduction"
+      - "budget reduction"
+      - "declining enrollment"
+
+# Free-text vendor / product watchlist - searched in board minutes and (where
+# scrapable) transparency data. Matching is CASE-SENSITIVE and word-boundaried
+# (utils.build_watchlist_matchers), so "SEAtS" matches the brand but not the
+# word "seats". Use each name's real casing.
 watchlist:
   # Your products
   - "SEAtS"
@@ -124,12 +147,16 @@ watchlist:
   - "Civitas Learning"
   - "Starfish"
   - "EAB"
+  - "EAB Navigate"
   - "Watermark"
   - "Engage2Serve"
   - "Anthology"
 
-  # Scheduling / space competitors
+  # Scheduling / space / curriculum competitors (named in the transcripts)
   - "Coursedog"
+  - "CourseLeaf"                     # Cerritos: CourseLeaf scheduling + curriculum
+  - "Element451"                     # North Idaho: advising & recruitment
+  - "HighPoint"                      # Cerritos
   - "Ready Education"
   - "Unit4"
 
