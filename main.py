@@ -71,6 +71,12 @@ def parse_args():
     p.add_argument("--skip-contracts", action="store_true")
     p.add_argument("--skip-contacts", action="store_true", help="Skip the Apollo pass even if config/apollo.yaml is enabled")
 
+    # Scrape criteria (optional filters that scope a run)
+    p.add_argument("--from", dest="from_date", metavar="YYYY-MM-DD", help="Only keep documents dated on/after this date")
+    p.add_argument("--to", dest="to_date", metavar="YYYY-MM-DD", help="Only keep documents dated on/before this date")
+    p.add_argument("--only-keyword", metavar="TERMS", help="Only keep documents whose text contains one of these terms (comma-separated)")
+    p.add_argument("--only-competitor", metavar="NAMES", help="Only keep documents mentioning one of these vendor/competitor names (comma-separated)")
+
     # Query-only modes (no scraping, read from the local DB)
     p.add_argument("--search", metavar="QUERY", help="Full-text search everything ever scraped, then exit")
     p.add_argument("--opportunities", action="store_true", help="Print the ranked opportunities feed, then exit")
@@ -159,6 +165,10 @@ def main():
             skip_transparency=args.skip_transparency,
             skip_contracts=args.skip_contracts,
             skip_contacts=args.skip_contacts,
+            criteria=pipeline.ScrapeCriteria.build(
+                date_from=args.from_date, date_to=args.to_date,
+                only_keywords=args.only_keyword, only_competitors=args.only_competitor,
+            ),
         )
     except ValueError as exc:
         log.error("%s Run --list-states to see valid keys.", exc)

@@ -13,7 +13,8 @@ from __future__ import annotations
 from . import utils
 
 
-def scrape_board_minutes(source: dict, session, seen: set[str], matchers, watchlist_patterns) -> tuple[list[dict], list[dict]]:
+def scrape_board_minutes(source: dict, session, seen: set[str], matchers, watchlist_patterns,
+                         *, date_from=None, date_to=None) -> tuple[list[dict], list[dict]]:
     url = source["url"]
     matches: list[dict] = []
 
@@ -39,6 +40,16 @@ def scrape_board_minutes(source: dict, session, seen: set[str], matchers, watchl
         return matches, [{"url": url, "reason": "no_pdf_links_found", "notes": ""}]
 
     for link in pdf_links:
+        # Date-range filter: if a date can be read from the link text or the
+        # PDF filename and it falls outside the range, skip WITHOUT downloading
+        # (the efficiency win). If no date is parseable, download anyway rather
+        # than silently miss it.
+        if date_from or date_to:
+            link_date = utils.parse_date(link.get("text")) or utils.parse_date(link["url"])
+            if link_date is not None:
+                if (date_from and link_date < date_from) or (date_to and link_date > date_to):
+                    continue
+
         pdf_hash = utils.item_hash(link["url"])
         if pdf_hash in seen:
             continue

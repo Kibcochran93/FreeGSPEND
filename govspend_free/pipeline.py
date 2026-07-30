@@ -54,6 +54,51 @@ class ScrapeResult:
         }
 
 
+@dataclass
+class ScrapeCriteria:
+    """Optional filters that scope a scrape run. All default to 'no filter'."""
+    date_from: "dt.date | None" = None
+    date_to: "dt.date | None" = None
+    only_keywords: list[str] | None = None      # keep only docs whose text contains one of these
+    only_competitors: list[str] | None = None    # keep only docs mentioning one of these names
+
+    @classmethod
+    def build(cls, *, date_from=None, date_to=None, only_keywords=None, only_competitors=None):
+        """Construct from raw strings (dates as 'YYYY-MM-DD', keyword/competitor
+        as lists or comma-strings). Empty/blank entries are dropped."""
+        def _terms(v):
+            if not v:
+                return None
+            items = v.split(",") if isinstance(v, str) else list(v)
+            items = [t.strip() for t in items if t and t.strip()]
+            return items or None
+        return cls(
+            date_from=utils.parse_date(date_from),
+            date_to=utils.parse_date(date_to),
+            only_keywords=_terms(only_keywords),
+            only_competitors=_terms(only_competitors),
+        )
+
+    def active(self) -> bool:
+        return any((self.date_from, self.date_to, self.only_keywords, self.only_competitors))
+
+    def keep(self, blob: str, date_text: str | None) -> bool:
+        """Does a matched document (its searchable text + a date string) pass?"""
+        low = (blob or "").lower()
+        if self.only_keywords and not any(k.lower() in low for k in self.only_keywords):
+            return False
+        if self.only_competitors and not any(c.lower() in low for c in self.only_competitors):
+            return False
+        if self.date_from or self.date_to:
+            d = utils.parse_date(date_text)
+            if d is not None:  # unparseable date -> keep (don't silently drop)
+                if self.date_from and d < self.date_from:
+                    return False
+                if self.date_to and d > self.date_to:
+                    return False
+        return True
+
+
 def run_scrape(
     conn,
     sources: dict,
@@ -65,13 +110,16 @@ def run_scrape(
     skip_transparency: bool = False,
     skip_contracts: bool = False,
     skip_contacts: bool = False,
+    criteria: "ScrapeCriteria | None" = None,
     write_report: bool = True,
 ) -> ScrapeResult:
     """Run the configured scrape passes and persist results to `conn`.
 
     `selected_state` (already normalized to a lowercase key, or None for all)
     limits the run to one state. Raises ValueError if it isn't a known key.
+    `criteria` optionally scopes the run by date range / keyword / competitor.
     """
+    criteria = criteria or ScrapeCriteria()
     matchers = utils.build_category_matchers(keywords_cfg.get("categories", {}))
     watchlist_patterns = utils.build_watchlist_matchers(keywords_cfg.get("watchlist", []))
 
@@ -94,6 +142,8 @@ def run_scrape(
                 for board in system.get("bid_boards", []):
                     log.info("  [bids] %s -> %s", system["name"], board["url"])
                     new_matches, skipped = bid_scraper.scrape_bid_board(board, session, seen, matchers)
+                    new_matches = [m for m in new_matches
+                                   if criteria.keep(f"{m['title']} {m.get('description', '')}", m.get("date"))]
                     for m in new_matches:
                         m["state"], m["institution"] = state_key, system["name"]
                         db.insert_document(
@@ -112,8 +162,11 @@ def run_scrape(
                 for minutes_src in system.get("board_minutes", []):
                     log.info("  [minutes] %s -> %s", system["name"], minutes_src["url"])
                     new_matches, skipped = board_minutes_scraper.scrape_board_minutes(
-                        minutes_src, session, seen, matchers, watchlist_patterns
+                        minutes_src, session, seen, matchers, watchlist_patterns,
+                        date_from=criteria.date_from, date_to=criteria.date_to,
                     )
+                    new_matches = [m for m in new_matches
+                                   if criteria.keep(m.get("full_text", ""), None)]
                     for m in new_matches:
                         m["state"], m["institution"] = state_key, system["name"]
                         db.insert_document(
@@ -130,6 +183,8 @@ def run_scrape(
             for t_src in state_cfg.get("transparency", []):
                 log.info("  [transparency] %s -> %s", t_src["name"], t_src["url"])
                 new_matches, skipped = transparency_scraper.scrape_transparency(t_src, session, seen, watchlist_patterns)
+                new_matches = [m for m in new_matches
+                               if criteria.keep(m.get("row", "") or m.get("file_url", ""), None)]
                 for m in new_matches:
                     m["state"], m["institution"] = state_key, t_src["name"]
                     # Use the matched row text (not the bare file_url) as the
@@ -152,6 +207,8 @@ def run_scrape(
                 if not skip_contracts:
                     log.info("  [contracts] %s (reusing transparency CSVs) ...", t_src["name"])
                     contract_matches, contract_skipped = contracts_scraper.scrape_contracts(t_src, session, seen)
+                    contract_matches = [c for c in contract_matches
+                                        if criteria.keep(c.get("vendor", ""), c.get("end_date"))]
                     for c in contract_matches:
                         c["state"], c["institution"] = state_key, t_src["name"]
                         db.insert_contract(

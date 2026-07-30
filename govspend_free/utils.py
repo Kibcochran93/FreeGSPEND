@@ -125,6 +125,47 @@ def looks_like_empty_shell(soup: BeautifulSoup, min_text_len: int = 400) -> bool
 
 
 # --------------------------------------------------------------------------
+# Date parsing (best-effort) - used by the date-range scrape/dashboard filters
+# --------------------------------------------------------------------------
+
+import datetime as _dt
+
+# Embedded numeric dates in filenames/link text, e.g. "2026-03-09-minutes.pdf"
+# or "Board-Agenda-3-14-2026". Tried after a clean parse fails.
+_YMD_RE = re.compile(r"(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})")
+_MDY_RE = re.compile(r"(\d{1,2})[-/.](\d{1,2})[-/.](\d{4})")
+
+
+def parse_date(text: str | None) -> "_dt.date | None":
+    """Best-effort date from arbitrary text (a link/filename, a CSV cell, or a
+    scraped_at timestamp). Returns a date or None if nothing confident is found.
+    Deliberately conservative (no fuzzy token-guessing) to avoid mis-dating."""
+    if not text:
+        return None
+    s = str(text).strip()
+    try:
+        from dateutil import parser as _p
+        return _p.parse(s, fuzzy=False).date()
+    except (ValueError, OverflowError, TypeError):
+        pass
+    m = _YMD_RE.search(s)
+    if m:
+        y, mo, d = (int(g) for g in m.groups())
+        try:
+            return _dt.date(y, mo, d)
+        except ValueError:
+            return None
+    m = _MDY_RE.search(s)
+    if m:
+        mo, d, y = (int(g) for g in m.groups())
+        try:
+            return _dt.date(y, mo, d)
+        except ValueError:
+            return None
+    return None
+
+
+# --------------------------------------------------------------------------
 # Dedup state: a flat JSON set of hashes we've already reported, so re-runs
 # only surface genuinely new items.
 # --------------------------------------------------------------------------

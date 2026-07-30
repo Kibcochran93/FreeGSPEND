@@ -117,6 +117,12 @@ class Api:
                     skip_contracts=options.get("skip_contracts", False),
                     # Apollo costs credits and needs config - opt in explicitly.
                     skip_contacts=options.get("skip_contacts", True),
+                    criteria=pipeline.ScrapeCriteria.build(
+                        date_from=options.get("date_from"),
+                        date_to=options.get("date_to"),
+                        only_keywords=options.get("only_keyword"),
+                        only_competitors=options.get("only_competitor"),
+                    ),
                 )
                 counts = result.counts()
             finally:
@@ -323,6 +329,16 @@ HTML = r"""
           <button class="primary" onclick="loadOpps()">Refresh</button>
         </div>
         <p class="hint">Everything ever scraped, scored by keyword strength + recency. Click a title to open it.</p>
+        <div class="row" id="oppFilters" style="margin-top:4px">
+          <label class="chk">Min score <input type="number" id="fScore" value="0" min="0" step="5" style="width:70px" oninput="applyOppFilters()"></label>
+          <input type="text" id="fKeyword" placeholder="filter: keyword / title / institution" style="min-width:220px" oninput="applyOppFilters()">
+          <select id="fCategory" onchange="applyOppFilters()"><option value="">All categories</option></select>
+          <label class="chk">From <input type="date" id="fFrom" oninput="applyOppFilters()"></label>
+          <label class="chk">To <input type="date" id="fTo" oninput="applyOppFilters()"></label>
+          <button class="ghost" onclick="clearOppFilters()">Clear</button>
+          <span class="spacer" style="flex:1"></span>
+          <span class="hint" id="oppCount"></span>
+        </div>
         <div id="oppsTable"></div>
       </div>
     </section>
@@ -362,9 +378,15 @@ HTML = r"""
           <label class="chk"><input type="checkbox" id="skip_contracts"> skip contracts</label>
           <label class="chk"><input type="checkbox" id="inc_contacts"> include Apollo contacts (uses credits)</label>
         </div>
+        <div class="row" style="margin-top:10px">
+          <label class="chk">From <input type="date" id="scrape_from"></label>
+          <label class="chk">To <input type="date" id="scrape_to"></label>
+          <input type="text" id="scrape_keyword" placeholder="only keyword(s), comma-separated" style="min-width:200px">
+          <input type="text" id="scrape_competitor" placeholder="only competitor(s), e.g. Ellucian, Civitas" style="min-width:200px">
+        </div>
         <div class="row" style="margin-top:12px">
           <button class="primary" id="runBtn" onclick="runScrape()">Run scrape</button>
-          <span class="hint">Hits live university/state sites &mdash; can take a few minutes. Progress streams below.</span>
+          <span class="hint">Criteria are optional filters &mdash; leave blank to scrape everything. A date range also skips downloading out-of-range minutes PDFs.</span>
         </div>
         <div id="scrapeStatus" class="status"></div>
         <div id="scrapeLog"></div>
@@ -432,8 +454,58 @@ HTML = r"""
   }
 
   // ---- Opportunities ----
+  let _oppsAll = [];
+
   async function loadOpps() {
-    const rows = await api().opportunities(100);
+    _oppsAll = await api().opportunities(200);
+    // Rebuild the category dropdown from whatever's in the data.
+    const cats = new Set();
+    _oppsAll.forEach(r => (r.categories || '').split(',').map(s => s.trim()).filter(Boolean).forEach(c => cats.add(c)));
+    const sel = el('fCategory'), cur = sel.value;
+    sel.innerHTML = '<option value="">All categories</option>';
+    [...cats].sort().forEach(c => { const o = document.createElement('option'); o.value = c; o.textContent = c; sel.appendChild(o); });
+    sel.value = cur;
+    applyOppFilters();
+  }
+
+  function effectiveDate(r) {
+    // Document's own date if it parses, else the scrape date (the "Both" rule).
+    if (r.date && !isNaN(Date.parse(r.date))) return new Date(r.date);
+    if (r.scraped_at) { const d = new Date(String(r.scraped_at).replace(' ', 'T')); if (!isNaN(d)) return d; }
+    return null;
+  }
+
+  function applyOppFilters() {
+    const minScore = parseFloat(el('fScore').value) || 0;
+    const kw = el('fKeyword').value.trim().toLowerCase();
+    const cat = el('fCategory').value;
+    const from = el('fFrom').value ? new Date(el('fFrom').value) : null;
+    let to = el('fTo').value ? new Date(el('fTo').value) : null;
+    if (to) to.setHours(23, 59, 59, 999);  // inclusive end-of-day
+    const rows = _oppsAll.filter(r => {
+      if (r.score < minScore) return false;
+      if (cat && !(r.categories || '').includes(cat)) return false;
+      if (kw) {
+        const hay = `${r.title||''} ${r.institution||''} ${r.state||''} ${r.categories||''} ${r.watchlist_hits||''}`.toLowerCase();
+        if (!hay.includes(kw)) return false;
+      }
+      if (from || to) {
+        const d = effectiveDate(r);
+        if (d) { if (from && d < from) return false; if (to && d > to) return false; }
+      }
+      return true;
+    });
+    el('oppCount').textContent = `${rows.length} of ${_oppsAll.length}`;
+    renderOppRows(rows);
+  }
+
+  function clearOppFilters() {
+    el('fScore').value = 0; el('fKeyword').value = ''; el('fCategory').value = '';
+    el('fFrom').value = ''; el('fTo').value = '';
+    applyOppFilters();
+  }
+
+  function renderOppRows(rows) {
     renderTable('oppsTable', ['Score', 'Type', 'State / Institution', 'Title', 'Tags', ''], rows, (r) => {
       const tr = document.createElement('tr');
       const s = td(r.score); s.className = 'score';
@@ -557,6 +629,10 @@ HTML = r"""
       skip_transparency: el('skip_transparency').checked,
       skip_contracts: el('skip_contracts').checked,
       skip_contacts: !el('inc_contacts').checked,
+      date_from: el('scrape_from').value,
+      date_to: el('scrape_to').value,
+      only_keyword: el('scrape_keyword').value,
+      only_competitor: el('scrape_competitor').value,
     };
     const res = await api().start_scrape(opts);
     if (!res.started) {

@@ -39,6 +39,36 @@ def test_run_scrape_all_skipped_is_empty(tmp_conn):
     json.dumps(counts)  # counts() must be JSON-serializable for the UI
 
 
+def test_parse_date():
+    from datetime import date
+    assert utils.parse_date("2026-03-09") == date(2026, 3, 9)
+    assert utils.parse_date("3/14/2026") == date(2026, 3, 14)
+    assert utils.parse_date("2026-03-09-minutes.pdf") == date(2026, 3, 9)  # embedded in filename
+    assert utils.parse_date("no date here") is None
+    assert utils.parse_date("") is None
+    assert utils.parse_date(None) is None
+
+
+def test_scrape_criteria():
+    c = pipeline.ScrapeCriteria.build(only_keywords="retention, attendance")
+    assert c.active()
+    assert c.keep("student retention program", None)
+    assert not c.keep("parking lot striping", None)
+
+    comp = pipeline.ScrapeCriteria.build(only_competitors="Ellucian, Civitas")
+    assert comp.keep("migrating off Ellucian Banner", None)
+    assert not comp.keep("unrelated text", None)
+
+    rng = pipeline.ScrapeCriteria.build(date_from="2026-01-01", date_to="2026-06-30")
+    assert rng.keep("x", "2026-03-09")
+    assert not rng.keep("x", "2025-12-31")   # before range
+    assert not rng.keep("x", "2026-07-01")   # after range
+    assert rng.keep("x", "no parseable date")  # unparseable -> kept, never silently dropped
+
+    empty = pipeline.ScrapeCriteria()
+    assert not empty.active() and empty.keep("anything at all", None)
+
+
 def test_run_scrape_unknown_state_raises(tmp_conn):
     with pytest.raises(ValueError):
         pipeline.run_scrape(

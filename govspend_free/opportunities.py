@@ -69,6 +69,7 @@ def rank_opportunities(conn, limit: int = 50) -> list[dict]:
             "url": row["url"],
             "categories": row["categories"],
             "watchlist_hits": row["watchlist_hits"],
+            "date": row["date"],
             "scraped_at": row["scraped_at"],
         })
     scored.sort(key=lambda r: r["score"], reverse=True)
