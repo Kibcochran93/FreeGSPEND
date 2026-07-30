@@ -238,6 +238,14 @@ def insert_payment(conn: sqlite3.Connection, *, ref: str, state: str = "", sourc
         return None  # already have this payment ref
 
 
+def clear_payments(conn: sqlite3.Connection) -> int:
+    """Empty the payments table (it's a derived cache - regenerable via
+    --ingest-spend). Returns the number of rows removed."""
+    cur = conn.execute("DELETE FROM payments")
+    conn.commit()
+    return cur.rowcount
+
+
 def payments_summary(conn: sqlite3.Connection) -> list[sqlite3.Row]:
     """Vendor-footprint rollup: how many payments (and to whom) per state, by
     resolved vendor kind. Only the rows the normalizer actually matched."""

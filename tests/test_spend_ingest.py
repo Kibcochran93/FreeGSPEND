@@ -71,6 +71,15 @@ def test_ingest_requires_column_mapping():
     assert skipped and skipped[0]["reason"] == "socrata_payments_misconfigured"
 
 
+def test_clear_payments(tmp_conn):
+    db.insert_payment(tmp_conn, ref="r1", state="ct", vendor_raw="ELLUCIAN",
+                      vendor_canonical="Ellucian", vendor_kind="competitor")
+    assert tmp_conn.execute("SELECT COUNT(*) FROM payments").fetchone()[0] == 1
+    removed = db.clear_payments(tmp_conn)
+    assert removed == 1
+    assert tmp_conn.execute("SELECT COUNT(*) FROM payments").fetchone()[0] == 0
+
+
 def test_amount_and_date_parsing():
     assert spend_ingest._parse_amount("$1,234.56") == 1234.56
     assert spend_ingest._parse_amount("") is None

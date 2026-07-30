@@ -96,6 +96,7 @@ def parse_args():
     p.add_argument("--retag", action="store_true", help="Re-run keyword/watchlist matching over already-scraped documents with the current keywords.yaml, updating their tags (use after editing keywords)")
     p.add_argument("--normalize-payments", action="store_true", help="Resolve stored state-checkbook rows into the normalized `payments` table (competitor/client footprint), then exit")
     p.add_argument("--ingest-spend", action="store_true", help="Pull state-checkbook payments live via Socrata (SODA) into the normalized `payments` table, then exit")
+    p.add_argument("--reset-payments", action="store_true", help="Empty the payments table (regenerable via --ingest-spend), then exit")
 
     p.add_argument("-q", "--quiet", action="store_true", help="Only log warnings/errors; still prints results (report path, summary, search output)")
     p.add_argument("-v", "--verbose", action="store_true", help="Verbose (DEBUG-level) logging")
@@ -177,6 +178,12 @@ def main():
 
     if args.send_alerts_only:
         _resend_last_report_digest(conn)
+        return
+
+    if args.reset_payments:
+        n = db.clear_payments(conn)
+        print(f"Cleared {n} row(s) from the payments table. "
+              "Repopulate with `python main.py --ingest-spend`.")
         return
 
     if args.ingest_spend:
