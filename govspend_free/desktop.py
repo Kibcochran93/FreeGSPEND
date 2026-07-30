@@ -327,7 +327,7 @@ HTML = r"""
         <div class="row">
           <strong>Ranked opportunities</strong>
           <span class="spacer" style="flex:1"></span>
-          <button class="primary" onclick="loadOpps()">Refresh</button>
+          <button class="primary" id="refreshBtn" onclick="loadOpps()">Refresh</button>
         </div>
         <p class="hint">Everything ever scraped, scored by keyword strength + recency. Click a title to open it.</p>
         <div class="row" id="oppFilters" style="margin-top:4px">
@@ -412,6 +412,16 @@ HTML = r"""
   </div>
 
 <script>
+  // Surface any uncaught JS error in the header so problems are visible.
+  window.onerror = function(msg, src, line) {
+    var b = document.getElementById('dbNote');
+    if (b) { b.textContent = 'JS error: ' + msg + ' (line ' + line + ')'; b.style.color = '#fca5a5'; }
+    return false;
+  };
+  window.addEventListener('unhandledrejection', function(ev) {
+    var b = document.getElementById('dbNote');
+    if (b) { b.textContent = 'bridge error: ' + (ev.reason && ev.reason.message ? ev.reason.message : ev.reason); b.style.color = '#fca5a5'; }
+  });
   const api = () => window.pywebview.api;
   const el = (id) => document.getElementById(id);
 
@@ -459,15 +469,26 @@ HTML = r"""
   let _oppsAll = [];
 
   async function loadOpps() {
-    _oppsAll = await api().opportunities(200);
+    const btn = el('refreshBtn');
+    if (btn) btn.disabled = true;
+    el('oppCount').textContent = 'Refreshing…';
+    try {
+      _oppsAll = await api().opportunities(200);
+    } catch (e) {
+      el('oppCount').textContent = 'Refresh failed';
+      el('oppsTable').innerHTML = '<div class="empty">Could not load opportunities: ' + (e && e.message ? e.message : e) + '</div>';
+      if (btn) btn.disabled = false;
+      return;
+    }
     // Rebuild the category dropdown from whatever's in the data.
     const cats = new Set();
-    _oppsAll.forEach(r => (r.categories || '').split(',').map(s => s.trim()).filter(Boolean).forEach(c => cats.add(c)));
+    (_oppsAll || []).forEach(r => (r.categories || '').split(',').map(s => s.trim()).filter(Boolean).forEach(c => cats.add(c)));
     const sel = el('fCategory'), cur = sel.value;
     sel.innerHTML = '<option value="">All categories</option>';
     [...cats].sort().forEach(c => { const o = document.createElement('option'); o.value = c; o.textContent = c; sel.appendChild(o); });
     sel.value = cur;
     applyOppFilters();
+    if (btn) btn.disabled = false;
   }
 
   function effectiveDate(r) {
