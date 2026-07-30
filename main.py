@@ -76,6 +76,7 @@ def parse_args():
     p.add_argument("--to", dest="to_date", metavar="YYYY-MM-DD", help="Only keep documents dated on/before this date")
     p.add_argument("--only-keyword", metavar="TERMS", help="Only keep documents whose text contains one of these terms (comma-separated)")
     p.add_argument("--only-competitor", metavar="NAMES", help="Only keep documents mentioning one of these vendor/competitor names (comma-separated)")
+    p.add_argument("--browser", action="store_true", help="Render js_rendered sources with headless Chromium (needs the [browser] extra + `playwright install chromium`). Slower.")
 
     # Query-only modes (no scraping, read from the local DB)
     p.add_argument("--search", metavar="QUERY", help="Full-text search everything ever scraped, then exit")
@@ -180,6 +181,7 @@ def main():
                 date_from=args.from_date, date_to=args.to_date,
                 only_keywords=args.only_keyword, only_competitors=args.only_competitor,
             ),
+            use_browser=args.browser,
         )
     except ValueError as exc:
         log.error("%s Run --list-states to see valid keys.", exc)

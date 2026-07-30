@@ -249,23 +249,36 @@ an expiration date for anything important.
 Run the tool once and read the `SKIPPED:` rows in your report - that's
 the most accurate live picture of coverage, since sites change.
 
-## Closing the JS-rendered gap (optional, more work)
+## Closing the JS-rendered gap (`--browser`, optional)
 
-The `js_rendered` and `form_post` sources need a real browser, not just
-`requests`. To extend this:
+`js_rendered` sources need a real browser, not just `requests`. That's now
+built in, opt-in, via headless Chromium (Playwright):
 
-1. `pip install playwright && playwright install chromium`
-2. Write a `fetch_with_browser(url) -> str` helper that opens the page,
-   waits for the results table/list to render, and returns
-   `page.content()`.
-3. In `bid_scraper.py` / `transparency_scraper.py` / `contracts_scraper.py`,
-   branch on `src_type == "js_rendered"` to call that instead of
-   `utils.fetch()`, then feed the returned HTML into `BeautifulSoup` the
-   same way the rest of the code already does.
+```bash
+pip install -e ".[browser]" && playwright install chromium
+python main.py --state georgia --browser        # renders js_rendered sources
+```
 
-Each JS platform (Jaggaer, GEP SMART, Oracle Fusion, Tableau, Ariba) will
-likely need its own wait-condition/selector tuning - not a one-size-fits-all
-fix, which is why it isn't built in by default.
+Or tick **"render JS sources"** on the Scrape tab. When `--browser` is on,
+`utils.fetch_page_or_skip` renders `js_rendered` sources through Chromium
+(`utils.fetch_with_browser`) and feeds the rendered HTML into the same
+BeautifulSoup parsing as everything else; with it off, those sources skip as
+before. It's off by default because the browser is slow and heavyweight.
+
+**Honest scope.** This is a foundation, not a universal unlock:
+
+- **Works** where the data lands in the rendered DOM after load (e.g. Jaggaer
+  sourcing pages render their solicitation tables).
+- **Doesn't help by itself** where the data needs *interaction* (clicking a
+  status filter or running a search - many Jaggaer/GEP result lists), or lives
+  in a **canvas/viz** (Tableau checkbooks) or behind a **data catalog** you
+  click into (CA FI$Cal). Those need per-platform selector/wait tuning or the
+  site's own export API.
+- `form_post` sources still skip - they need a form submission, not a load.
+
+So `--browser` gets you past the empty-shell wall; squeezing data out of a
+specific platform is still per-site work (Jaggaer, GEP SMART, Oracle Fusion,
+Tableau, Ariba each differ).
 
 ## Extending to more states
 

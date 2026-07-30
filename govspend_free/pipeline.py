@@ -111,6 +111,7 @@ def run_scrape(
     skip_contracts: bool = False,
     skip_contacts: bool = False,
     criteria: "ScrapeCriteria | None" = None,
+    use_browser: bool = False,
     write_report: bool = True,
 ) -> ScrapeResult:
     """Run the configured scrape passes and persist results to `conn`.
@@ -118,8 +119,14 @@ def run_scrape(
     `selected_state` (already normalized to a lowercase key, or None for all)
     limits the run to one state. Raises ValueError if it isn't a known key.
     `criteria` optionally scopes the run by date range / keyword / competitor.
+    `use_browser` renders js_rendered sources through headless Chromium.
     """
     criteria = criteria or ScrapeCriteria()
+    utils.USE_BROWSER = bool(use_browser)
+    if use_browser and not utils.browser_available():
+        log.warning("  [browser] --browser requested but playwright isn't installed; "
+                    "js_rendered sources will still be skipped. "
+                    'Run: pip install -e ".[browser]" && playwright install chromium')
     matchers = utils.build_category_matchers(keywords_cfg.get("categories", {}))
     watchlist_patterns = utils.build_watchlist_matchers(keywords_cfg.get("watchlist", []))
 

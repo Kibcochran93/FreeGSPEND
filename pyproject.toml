@@ -27,6 +27,9 @@ llm = ["anthropic>=0.40.0"]
 # The desktop UI. Install with:  pip install -e ".[ui]"
 # On Windows this uses the built-in Edge WebView2 runtime (present on Win11).
 ui = ["pywebview>=4.4"]
+# Headless-browser rendering of JS sources (--browser). After installing:
+#   pip install -e ".[browser]" && playwright install chromium
+browser = ["playwright>=1.40"]
 
 [project.scripts]
 # Console entry points. Because the tool reads config/ and writes db/, reports/,

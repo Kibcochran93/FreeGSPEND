@@ -123,6 +123,7 @@ class Api:
                         only_keywords=options.get("only_keyword"),
                         only_competitors=options.get("only_competitor"),
                     ),
+                    use_browser=options.get("use_browser", False),
                 )
                 counts = result.counts()
             finally:
@@ -377,6 +378,7 @@ HTML = r"""
           <label class="chk"><input type="checkbox" id="skip_transparency"> skip transparency</label>
           <label class="chk"><input type="checkbox" id="skip_contracts"> skip contracts</label>
           <label class="chk"><input type="checkbox" id="inc_contacts"> include Apollo contacts (uses credits)</label>
+          <label class="chk"><input type="checkbox" id="use_browser"> render JS sources (headless browser, slower)</label>
         </div>
         <div class="row" style="margin-top:10px">
           <label class="chk">From <input type="date" id="scrape_from"></label>
@@ -633,6 +635,7 @@ HTML = r"""
       date_to: el('scrape_to').value,
       only_keyword: el('scrape_keyword').value,
       only_competitor: el('scrape_competitor').value,
+      use_browser: el('use_browser').checked,
     };
     const res = await api().start_scrape(opts);
     if (!res.started) {

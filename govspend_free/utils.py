@@ -86,6 +86,62 @@ def soupify(resp: requests.Response) -> BeautifulSoup:
     return BeautifulSoup(resp.text, "lxml")
 
 
+# Set by pipeline.run_scrape when --browser is passed. When True, js_rendered
+# sources are fetched through headless Chromium (see fetch_with_browser) instead
+# of being skipped. Off by default: the browser is slow and heavyweight.
+USE_BROWSER = False
+BROWSER_WAIT_MS = 6000  # how long to let a SPA settle after load
+
+
+def browser_available() -> bool:
+    try:
+        import playwright  # noqa: F401
+        return True
+    except ImportError:
+        return False
+
+
+def fetch_with_browser(url: str, wait_selector: str | None = None,
+                       wait_ms: int = BROWSER_WAIT_MS) -> str | None:
+    """Render a JavaScript page in headless Chromium and return its HTML, or
+    None on failure. Requires the [browser] extra:
+        pip install -e ".[browser]" && playwright install chromium
+    Uses Chromium's own user agent (the whole point of a real browser) and
+    waits for the network to go idle so SPA-rendered tables are present.
+    """
+    try:
+        from playwright.sync_api import sync_playwright
+    except ImportError:
+        log.warning('  [browser] playwright not installed - run: '
+                    'pip install -e ".[browser]" && playwright install chromium')
+        return None
+    try:
+        with sync_playwright() as p:
+            browser = p.chromium.launch(headless=True)
+            try:
+                page = browser.new_page()
+                # "domcontentloaded" (not "networkidle"): many procurement SPAs
+                # (Jaggaer/SciQuest) poll continuously, so the network never
+                # goes idle and networkidle just times out. We load the DOM,
+                # then wait a fixed interval for the JS to populate.
+                page.goto(url, wait_until="domcontentloaded", timeout=DEFAULT_TIMEOUT * 1000)
+                if wait_selector:
+                    try:
+                        page.wait_for_selector(wait_selector, timeout=wait_ms)
+                    except Exception:
+                        pass
+                else:
+                    page.wait_for_timeout(wait_ms)
+                return page.content()
+            finally:
+                browser.close()
+    except Exception as exc:  # launch/nav/timeout errors of many types
+        log.warning("  [browser fetch error] %s -> %s", url, exc)
+        return None
+    finally:
+        time.sleep(POLITE_DELAY_SECONDS)
+
+
 def fetch_page_or_skip(
     source: dict, session: requests.Session, *, empty_shell_notes: str = ""
 ) -> tuple[BeautifulSoup | None, dict | None]:
@@ -94,15 +150,31 @@ def fetch_page_or_skip(
     skipped. Collapses the js_rendered/form_post short-circuit, the fetch
     failure case, and empty-shell detection that all four scrapers repeat.
 
+    When utils.USE_BROWSER is on, js_rendered sources are rendered through
+    headless Chromium instead of skipped. (form_post still skips: it needs a
+    form submission, not just a page load.)
+
     Note: callers with an extra pre-fetch condition (e.g. the board-minutes
     {YEAR} URL-pattern check) should test that BEFORE calling this.
     """
     url = source["url"]
     src_type = source.get("type", "unknown")
 
-    if src_type in ("js_rendered", "form_post"):
-        reason = "needs_browser" if src_type == "js_rendered" else "needs_session"
-        return None, {"url": url, "reason": reason, "notes": source.get("notes", "")}
+    if src_type == "form_post":
+        return None, {"url": url, "reason": "needs_session", "notes": source.get("notes", "")}
+
+    if src_type == "js_rendered":
+        if not (USE_BROWSER and browser_available()):
+            return None, {"url": url, "reason": "needs_browser", "notes": source.get("notes", "")}
+        html = fetch_with_browser(url)
+        if not html:
+            return None, {"url": url, "reason": "browser_fetch_failed", "notes": source.get("notes", "")}
+        soup = BeautifulSoup(html, "lxml")
+        if looks_like_empty_shell(soup):
+            return None, {"url": url, "reason": "empty_after_render",
+                          "notes": "Rendered in a browser but still little content - "
+                                   "the data may need a search/click, not just a page load."}
+        return soup, None
 
     resp = fetch(url, session=session)
     if resp is None:
