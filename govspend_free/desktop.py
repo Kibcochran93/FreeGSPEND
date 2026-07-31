@@ -189,6 +189,7 @@ class Api:
                     skip_board_minutes=options.get("skip_board_minutes", False),
                     skip_transparency=options.get("skip_transparency", False),
                     skip_federal=options.get("skip_federal", False),
+                    skip_sam=options.get("skip_sam", False),
                     skip_contracts=options.get("skip_contracts", False),
                     # Apollo costs credits and needs config - opt in explicitly.
                     skip_contacts=options.get("skip_contacts", True),
@@ -572,6 +573,7 @@ HTML = r"""
           <label class="chk"><input type="checkbox" id="skip_board_minutes"> skip minutes</label>
           <label class="chk"><input type="checkbox" id="skip_transparency"> skip transparency</label>
           <label class="chk"><input type="checkbox" id="skip_federal"> skip federal</label>
+          <label class="chk" title="SAM.gov federal RFPs run once per full scrape when config/sam.yaml is enabled (uses your daily API key quota)"><input type="checkbox" id="skip_sam"> skip SAM.gov</label>
           <label class="chk"><input type="checkbox" id="skip_contracts"> skip contracts</label>
           <label class="chk"><input type="checkbox" id="inc_contacts"> include Apollo contacts (uses credits)</label>
           <label class="chk"><input type="checkbox" id="use_browser"> render JS sources (headless browser, slower)</label>
@@ -631,6 +633,7 @@ HTML = r"""
     el('tab-' + t.dataset.tab).classList.remove('hidden');
     if (t.dataset.tab === 'home') loadHome();
     else if (t.dataset.tab === 'opps') loadOpps();
+    else if (t.dataset.tab === 'exp') loadExp();
     else if (t.dataset.tab === 'ops') checkOpsGate();
   });
 
@@ -734,7 +737,10 @@ HTML = r"""
   function clearOppFilters() {
     el('fScore').value = 0; el('fKeyword').value = ''; el('fCategory').value = '';
     el('fType').value = ''; el('fFrom').value = ''; el('fTo').value = '';
-    applyOppFilters();
+    const older = el('fOlder'); const wasOld = older && older.checked;
+    if (older) older.checked = false;
+    // If the >1yr set was loaded, reload (re-applies the cutoff); else just refilter.
+    if (wasOld) loadOpps(); else applyOppFilters();
   }
 
   function renderOppRows(rows) {
@@ -1002,6 +1008,7 @@ HTML = r"""
       skip_board_minutes: el('skip_board_minutes').checked,
       skip_transparency: el('skip_transparency').checked,
       skip_federal: el('skip_federal').checked,
+      skip_sam: el('skip_sam').checked,
       skip_contracts: el('skip_contracts').checked,
       skip_contacts: !el('inc_contacts').checked,
       date_from: el('scrape_from').value,
