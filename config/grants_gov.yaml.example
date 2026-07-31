@@ -1,0 +1,50 @@
+# Grants.gov federal grant-OPPORTUNITY source (public "Search2" API).
+# Forward-looking federal funding opportunities (open + forecasted) that
+# colleges can apply for, stored as doc_type='federal_grant_opp'.
+# Copy to config/grants_gov.yaml (gitignored) and set enabled: true.
+#
+# NO API KEY NEEDED - the Search2 API is public/keyless. Just flip `enabled`.
+# It runs once per full update (nationwide, not per-state), like the SAM.gov pass.
+# Docs: https://www.grants.gov/api/search2  (POST https://api.grants.gov/v1/api/search2)
+
+enabled: false            # set true to run the Grants.gov pass on a full update
+
+# Which opportunity states to include. "posted" = open for application now,
+# "forecasted" = announced/upcoming. Pipe-separated. (Add "closed|archived" only
+# if you want historical opportunities too - not useful as live leads.)
+statuses: "posted|forecasted"
+
+# --- Query lenses -----------------------------------------------------------
+# The pass runs each configured lens and merges the results (deduped by opp id).
+# The precise defaults below target exactly the grants SEAtS cares about; the
+# broad "Education" funding category is intentionally OFF (it's ~93% NIH/NSF
+# research-training money, not what colleges apply for).
+#
+# 1. cfda: the Dept-of-Ed student-success programs (TRIO / GEAR UP / Title III-V
+#    / FIPSE) - the same CFDA set the USAspending pass pulls. Every hit is
+#    guaranteed the "Student Success & Retention" category by its program. This
+#    is the "a SEAtS-relevant grant competition just opened" signal. Pipe-list;
+#    default is the built-in student-success set. Set to "" to disable this lens.
+cfda: "84.031|84.042|84.044|84.047|84.066|84.116|84.334"
+
+# 2. agencies: issuing-agency filter. "ED" = U.S. Department of Education - pulls
+#    every open Dept-of-Ed opportunity, then keeps only those whose title matches
+#    a SEAtS bid category (keywords.yaml). Catches well-named competitions outside
+#    the CFDA set. Pipe-list; set to "" to disable this lens.
+agencies: "ED"
+
+# 3. funding_categories / keyword: the broad net. OFF by default. Set
+#    funding_categories to "ED" (or "ED|ISS") and/or a keyword to widen recall -
+#    but expect mostly irrelevant hits; the SEAtS category filter still applies.
+funding_categories: ""
+keyword: ""
+
+# Optional Grants.gov eligibility codes (pipe-list), applied to every lens.
+# "06" = public/state institutions of higher education, "20" = private ones.
+# Leave blank for all eligibilities.
+eligibilities: ""
+
+# Paging, per lens. `rows` per page (<=1000) and how many pages one lens may
+# scan. The pass logs a warning if a lens had more opportunities than it scanned.
+rows: 100
+max_pages: 5

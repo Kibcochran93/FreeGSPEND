@@ -7,6 +7,7 @@ config/gtm_profile.md
 config/ops.yaml
 config/hubspot.yaml
 config/sam.yaml
+config/grants_gov.yaml
 
 # --- Generated / local data (per-machine, not source) ---
 db/

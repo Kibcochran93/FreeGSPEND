@@ -38,9 +38,10 @@ python main.py --reset-payments   # empty the payments cache (regenerable)
 python main.py --play             # Ops "Full Motion" account-prioritization (read-only HubSpot)
 python main.py --brief "University of Arkansas System"   # account brief via claude CLI
 python main.py --retag            # re-tag stored docs after editing keywords.yaml
-pytest                            # 85 tests, offline
+pytest                            # 114 tests, offline
 ```
-Scrape filters: `--from/--to`, `--only-keyword`, `--only-competitor`, `--skip-federal`, `--browser`.
+Scrape filters: `--from/--to`, `--only-keyword`, `--only-competitor`, `--skip-federal`,
+`--skip-sam`, `--skip-grants`, `--browser`.
 
 ## What works
 - **Board minutes** (AR/TN/TX/CA) — reliable lead source. **Bids/RFPs** on native-HTML boards,
@@ -71,6 +72,17 @@ Scrape filters: `--from/--to`, `--only-keyword`, `--only-competitor`, `--skip-fe
 - **USAspending federal grants** — keyless nationwide API; pulls Dept-of-Ed student-success
   grants (Title III/V, TRIO, GEAR UP) to colleges. Nationwide `doc_type='federal_award'`; feeds
   Opportunities + the Ops play. (Federal is nationwide but doesn't count as *state education* coverage.)
+- **Grants.gov grant OPPORTUNITIES** (`grants_gov.py`, `--skip-grants`) — the keyless nationwide
+  Search2 API; the forward calendar of federal grant *opportunities* (open + forecasted) colleges
+  apply for. `doc_type='federal_grant_opp'`, `source='grants_gov'`, nationwide (`state=''`, institution
+  = funding agency). Opt-in via `config/grants_gov.yaml` (enabled, NO key), runs once per full scrape
+  like SAM. Precise-by-design multi-lens query: (1) the Dept-of-Ed student-success **CFDA** set
+  (TRIO/GEAR UP/Title III-V/FIPSE — same as USAspending; CFDA guarantees the ICP category), (2)
+  **agencies=ED** narrowed by SEAtS title match. GOTCHA baked in: Search2's `cfda` filter only
+  matches a SINGLE code (pipe/comma lists silently return 0), so the adapter expands the list into
+  one exact query per code. The noisy `fundingCategories=ED` lens (~93% NIH) is off by default. Yields
+  ~0 when no SEAtS competition is open (honest, not a bug); proven to keep 37 real Dept-of-Ed comps
+  when archived is included. Completes USAspending(awarded)+SAM(RFPs)+Grants.gov(opportunities).
 - **Spend normalization** — closed-world `payments` table + `normalize.py`: resolves a raw
   vendor against a KNOWN set (competitors from keywords.yaml + client + institutions), so
   `SEATS SOFTWARE LIMITED` -> SEAtS but `VIVID SEATS` is dropped. `--ingest-spend` pulls live

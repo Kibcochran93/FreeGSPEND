@@ -35,6 +35,7 @@ class ScrapeResult:
     transparency: list = field(default_factory=list)
     federal: list = field(default_factory=list)
     federal_rfps: list = field(default_factory=list)
+    federal_grant_opps: list = field(default_factory=list)
     contracts: list = field(default_factory=list)
     contacts: list = field(default_factory=list)
     skipped: list = field(default_factory=list)
@@ -47,6 +48,7 @@ class ScrapeResult:
             "transparency": len(self.transparency),
             "federal": len(self.federal),
             "federal_rfps": len(self.federal_rfps),
+            "federal_grant_opps": len(self.federal_grant_opps),
             "contracts": len(self.contracts),
             "contracts_expiring_soon": sum(1 for c in self.contracts if c.get("expiring_soon")),
             "contacts": len(self.contacts),
@@ -110,6 +112,7 @@ def run_scrape(
     skip_transparency: bool = False,
     skip_federal: bool = False,
     skip_sam: bool = False,
+    skip_grants: bool = False,
     skip_contracts: bool = False,
     skip_contacts: bool = False,
     criteria: "ScrapeCriteria | None" = None,
@@ -282,6 +285,44 @@ def run_scrape(
             result.skipped.extend(sam_skipped)
         elif sam_cfg or sam_key:
             log.info("  [sam] SAM.gov config present but disabled or missing api_key - skipping")
+
+    # Grants.gov federal grant OPPORTUNITIES - a single nationwide KEYLESS pass,
+    # so it runs once on a full scrape. Opt-in via config/grants_gov.yaml (enabled).
+    if not skip_grants and selected_state is None:
+        from . import grants_gov
+        g_cfg = grants_gov.load_config()
+        if g_cfg.get("enabled"):
+            log.info("\n=== Grants.gov FEDERAL GRANT OPPORTUNITIES (nationwide) ===")
+            # cfda/agencies default to the precise lenses when the key is absent
+            # or null; an explicit "" in config disables that lens.
+            def _lens(key, default):
+                v = g_cfg.get(key, default)
+                return default if v is None else str(v)
+            grant_matches, grant_skipped = grants_gov.scrape_grants_gov(
+                session, seen, matchers,
+                statuses=str(g_cfg.get("statuses") or grants_gov.DEFAULT_STATUSES),
+                cfda=_lens("cfda", grants_gov.DEFAULT_CFDA),
+                agencies=_lens("agencies", grants_gov.DEFAULT_AGENCIES),
+                funding_categories=str(g_cfg.get("funding_categories", grants_gov.DEFAULT_FUNDING_CATEGORIES) or ""),
+                keyword=str(g_cfg.get("keyword") or ""),
+                eligibilities=str(g_cfg.get("eligibilities") or ""),
+                rows=int(g_cfg.get("rows", grants_gov.DEFAULT_ROWS) or grants_gov.DEFAULT_ROWS),
+                max_pages=int(g_cfg.get("max_pages", grants_gov.DEFAULT_MAX_PAGES) or grants_gov.DEFAULT_MAX_PAGES),
+            )
+            grant_matches = [m for m in grant_matches if criteria.keep(m["text"], m.get("date"))]
+            for m in grant_matches:
+                db.insert_document(
+                    conn, doc_type="federal_grant_opp", state=m.get("state", ""),
+                    institution=m.get("institution", ""), title=m["title"], url=m["url"],
+                    text=m["text"], date=m.get("date", ""), categories=m["categories"],
+                    source="grants_gov",
+                )
+            result.federal_grant_opps.extend(grant_matches)
+            for s in grant_skipped:
+                s.update(pass_type="grants")
+            result.skipped.extend(grant_skipped)
+        elif g_cfg:
+            log.info("  [grants] Grants.gov config present but disabled - skipping")
 
     if not skip_contacts:
         log.info("\n=== CONTACTS (Apollo.io) ===")

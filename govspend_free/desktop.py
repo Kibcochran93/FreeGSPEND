@@ -218,6 +218,7 @@ class Api:
                     skip_transparency=options.get("skip_transparency", False),
                     skip_federal=options.get("skip_federal", False),
                     skip_sam=options.get("skip_sam", False),
+                    skip_grants=options.get("skip_grants", False),
                     skip_contracts=options.get("skip_contracts", False),
                     # Apollo costs credits and needs config - opt in explicitly.
                     skip_contacts=options.get("skip_contacts", True),
@@ -794,6 +795,7 @@ HTML = r"""
             <label class="chk"><input type="checkbox" id="skip_transparency"> skip spending</label>
             <label class="chk"><input type="checkbox" id="skip_federal"> skip federal grants</label>
             <label class="chk" title="SAM.gov federal RFPs run once per full update when config/sam.yaml is enabled (uses your daily API key quota)"><input type="checkbox" id="skip_sam"> skip SAM.gov RFPs</label>
+            <label class="chk" title="Grants.gov federal grant opportunities run once per full update when config/grants_gov.yaml is enabled (keyless, no API key)"><input type="checkbox" id="skip_grants"> skip Grants.gov opps</label>
             <label class="chk"><input type="checkbox" id="skip_contracts"> skip contracts</label>
             <label class="chk"><input type="checkbox" id="inc_contacts"> include contact lookup (Apollo &mdash; uses credits)</label>
             <label class="chk" title="Render JavaScript-heavy sites with a headless browser (slower)"><input type="checkbox" id="use_browser"> render JS-heavy sources (slower)</label>
@@ -1256,7 +1258,7 @@ HTML = r"""
       el('scrapeStatus').className = 'status ok';
       el('scrapeStatus').textContent =
         `Done - ${c.bids} bids, ${c.minutes} minutes, ${c.transparency} transparency, ` +
-        `${c.federal} federal, ` +
+        `${c.federal} federal, ${c.federal_grant_opps} grant-opps, ` +
         `${c.contracts} contracts (${c.contracts_expiring_soon} expiring soon), ${c.contacts} contacts, ` +
         `${c.skipped} sources skipped. Stored in the database.`;
       el('runBtn').disabled = false;
@@ -1316,6 +1318,7 @@ HTML = r"""
       skip_transparency: el('skip_transparency').checked,
       skip_federal: el('skip_federal').checked,
       skip_sam: el('skip_sam').checked,
+      skip_grants: el('skip_grants').checked,
       skip_contracts: el('skip_contracts').checked,
       skip_contacts: !el('inc_contacts').checked,
       date_from: el('scrape_from').value,

@@ -259,6 +259,33 @@ more than it scanned). The key is sent as a query parameter, so the tool logs on
 HTTP status codes - never the key. Federal RFPs are nationwide and do **not** count
 toward the state-education numbers in `--coverage`.
 
+## Grants.gov federal grant opportunities (optional, keyless)
+
+The **forward calendar** of federal money colleges can apply for: Grants.gov is
+the federal grant/assistance board, so one **keyless, nationwide** feed gives the
+open + forecasted grant *opportunities* in all 50 states at once (`grants_gov.py`,
+stored as `doc_type='federal_grant_opp'`). It completes the federal picture -
+USAspending = grants already **awarded**, SAM.gov = contract **RFPs**, Grants.gov
+= grant **opportunities** (what's opening next).
+
+```bash
+cp config/grants_gov.yaml.example config/grants_gov.yaml   # then set enabled: true (NO key needed)
+python main.py                                              # a nationwide Grants.gov pass runs once per full scrape
+python main.py --skip-grants                                # ...or skip it
+```
+
+**No API key** - the Search2 API is public. It's off until you set `enabled: true`.
+The default query is precise on purpose: it pulls the **Dept-of-Ed student-success
+programs by CFDA** (TRIO / GEAR UP / Title III-V / FIPSE - the same set the
+USAspending pass uses; every hit is guaranteed the "Student Success & Retention"
+category) plus every **Department-of-Education-issued** opportunity narrowed to a
+SEAtS bid category. The broad "Education" funding category is off by default
+because it's ~93% NIH/NSF research money, not what colleges apply for. Because
+SEAtS-relevant competitions are only open in brief windows, this source is
+legitimately quiet most of the time and lights up when a real one opens - it never
+fabricates a lead. Opportunities are nationwide (no place-of-performance state) and
+do **not** count toward the state-education numbers in `--coverage`.
+
 ## Alerts (optional, free)
 
 ```bash

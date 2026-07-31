@@ -73,6 +73,7 @@ def parse_args():
     p.add_argument("--skip-transparency", action="store_true")
     p.add_argument("--skip-federal", action="store_true", help="Skip the USAspending federal-grant pass")
     p.add_argument("--skip-sam", action="store_true", help="Skip the SAM.gov federal-RFP pass (nationwide; runs only on a full scrape when config/sam.yaml is enabled)")
+    p.add_argument("--skip-grants", action="store_true", help="Skip the Grants.gov federal grant-opportunity pass (nationwide, keyless; runs only on a full scrape when config/grants_gov.yaml is enabled)")
     p.add_argument("--skip-board-minutes", action="store_true")
     p.add_argument("--skip-bids", action="store_true")
     p.add_argument("--skip-contracts", action="store_true")
@@ -290,6 +291,7 @@ def main():
             skip_transparency=args.skip_transparency,
             skip_federal=args.skip_federal,
             skip_sam=args.skip_sam,
+            skip_grants=args.skip_grants,
             skip_contracts=args.skip_contracts,
             skip_contacts=args.skip_contacts,
             criteria=pipeline.ScrapeCriteria.build(
@@ -348,6 +350,7 @@ def _print_summary(result: pipeline.ScrapeResult):
     print(f"New transparency matches:   {c['transparency']}")
     print(f"New federal grant awards:   {c['federal']}")
     print(f"New SAM.gov federal RFPs:    {c['federal_rfps']}")
+    print(f"New Grants.gov grant opps:   {c['federal_grant_opps']}")
     print(f"New contract records:       {c['contracts']} ({c['contracts_expiring_soon']} expiring soon)")
     print(f"New contacts (Apollo):      {c['contacts']}")
     print(f"Sources skipped:            {c['skipped']}")

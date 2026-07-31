@@ -76,6 +76,7 @@ def gather() -> dict:
         "llm.yaml (AI Search)": _config_status("llm.yaml", secret_key="api_key"),
         "hubspot.yaml (Ops play)": _config_status("hubspot.yaml", secret_key="token"),
         "sam.yaml (Federal RFPs)": _config_status("sam.yaml", secret_key="api_key"),
+        "grants_gov.yaml (Federal grant opps)": _config_status("grants_gov.yaml"),
         "alerts.yaml (email)": _config_status("alerts.yaml"),
         "ops.yaml (Ops context)": _config_status("ops.yaml"),
     }
