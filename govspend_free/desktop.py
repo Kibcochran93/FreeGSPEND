@@ -412,22 +412,23 @@ class _WebviewLogHandler(logging.Handler):
 
 
 def _app_icon():
-    """Generate (once) and return the app-icon PNG path, or None on any failure.
-    Pure-stdlib PNG writer - a rounded blue tile with white 'bar chart' bars - so
-    there's no image-library dependency."""
+    """Generate (once) and return the app-icon .ICO path, or None on any failure.
+    Windows' window icon goes through System.Drawing.Icon, which requires a real
+    .ico (a PNG raises ArgumentException on a pywebview worker thread and crashes
+    the app), so we emit a 32-bit BMP-DIB ICO with a pure-stdlib writer - a
+    rounded blue tile with white 'bar chart' bars. No image-library dependency."""
     try:
         import struct
-        import zlib
-        icon = utils.STATE_DIR / "app_icon.png"
+        icon = utils.STATE_DIR / "app_icon.ico"
         if icon.exists():
             return icon
-        W = H = 64
-        BG, WH, AC, TR = (37, 99, 235, 255), (255, 255, 255, 255), (147, 197, 253, 255), (0, 0, 0, 0)
-        m, r = 4, 13
-        bars = ((17, 40), (28, 30), (39, 22))   # (x_start, top_y); 8px wide, bottom y=50
+        S = 32
+        BG, WH, AC = (37, 99, 235), (255, 255, 255), (147, 197, 253)
+        m, r = 2, 7
+        bars = ((8, 20), (14, 15), (20, 11))   # (x_start, top_y); 5px wide, bottom y=25
 
         def inside(x, y):
-            x0, y0, x1, y1 = m, m, W - 1 - m, H - 1 - m
+            x0, y0, x1, y1 = m, m, S - 1 - m, S - 1 - m
             if x < x0 or x > x1 or y < y0 or y > y1:
                 return False
             for cx, cy, tx, ty in ((x0 + r, y0 + r, x < x0 + r, y < y0 + r),
@@ -438,26 +439,36 @@ def _app_icon():
                     return (x - cx) ** 2 + (y - cy) ** 2 <= r * r
             return True
 
-        raw = bytearray()
-        for y in range(H):
-            raw.append(0)   # PNG filter type 0
-            for x in range(W):
-                if not inside(x, y):
-                    raw += bytes(TR)
-                elif any(bx <= x < bx + 8 and top <= y <= 50 for bx, top in bars):
-                    raw += bytes(WH)
-                elif (x - 44) ** 2 + (y - 17) ** 2 <= 16:
-                    raw += bytes(AC)
-                else:
-                    raw += bytes(BG)
+        def color(x, y):
+            if not inside(x, y):
+                return None    # transparent
+            if any(bx <= x < bx + 5 and top <= y <= 25 for bx, top in bars):
+                return WH
+            if (x - 22) ** 2 + (y - 9) ** 2 <= 6:
+                return AC
+            return BG
 
-        def chunk(typ, data):
-            return (struct.pack(">I", len(data)) + typ + data
-                    + struct.pack(">I", zlib.crc32(typ + data) & 0xffffffff))
-        icon.write_bytes(b"\x89PNG\r\n\x1a\n"
-                         + chunk(b"IHDR", struct.pack(">IIBBBBB", W, H, 8, 6, 0, 0, 0))
-                         + chunk(b"IDAT", zlib.compress(bytes(raw), 9))
-                         + chunk(b"IEND", b""))
+        xor = bytearray()          # BGRA pixels, bottom-up
+        for row in range(S):
+            y = S - 1 - row
+            for x in range(S):
+                c = color(x, y)
+                xor += bytes((0, 0, 0, 0)) if c is None else bytes((c[2], c[1], c[0], 255))
+        row_bytes = ((S + 31) // 32) * 4     # 1bpp AND mask, rows padded to 32 bits
+        andmask = bytearray()
+        for row in range(S):
+            y = S - 1 - row
+            bits = bytearray(row_bytes)
+            for x in range(S):
+                if color(x, y) is None:      # transparent -> AND bit set
+                    bits[x // 8] |= 0x80 >> (x % 8)
+            andmask += bits
+
+        bmi = struct.pack("<IiiHHIIiiII", 40, S, S * 2, 1, 32, 0, 0, 0, 0, 0, 0)
+        image = bmi + bytes(xor) + bytes(andmask)
+        icondir = struct.pack("<HHH", 0, 1, 1)
+        entry = struct.pack("<BBBBHHII", S, S, 0, 0, 1, 32, len(image), 22)
+        icon.write_bytes(icondir + entry + image)
         return icon
     except Exception:
         return None
