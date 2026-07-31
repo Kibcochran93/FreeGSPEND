@@ -69,6 +69,7 @@ def parse_args():
     p.add_argument("--state", help="Only scan this state key from sources.yaml (e.g. arkansas)")
     p.add_argument("--list-states", action="store_true", help="List configured state keys and exit")
     p.add_argument("--doctor", action="store_true", help="Report what's configured/working (deps, config files, tokens, DB contents), then exit")
+    p.add_argument("--discover", metavar="FAMILY", choices=["bonfire", "ionwave"], help="Enumerate + classify Bonfire/Ion Wave tenants (Common Crawl + a live fetch each) into reports/discovered_<family>_<ts>.csv, then exit. Slow + rate-limited; higher-ed yield on these platforms is small.")
     p.add_argument("--skip-transparency", action="store_true")
     p.add_argument("--skip-federal", action="store_true", help="Skip the USAspending federal-grant pass")
     p.add_argument("--skip-sam", action="store_true", help="Skip the SAM.gov federal-RFP pass (nationwide; runs only on a full scrape when config/sam.yaml is enabled)")
@@ -124,6 +125,21 @@ def main():
 
     if args.doctor:
         doctor.run_doctor()
+        return
+
+    if args.discover:
+        import time as _time
+        from govspend_free import discovery
+        rows = discovery.run(args.discover)
+        he = [r for r in rows if r.get("segment") == "higher_ed" and r.get("live")]
+        out = utils.REPORTS_DIR / f"discovered_{args.discover}_{_time.strftime('%Y%m%dT%H%M%SZ', _time.gmtime())}.csv"
+        discovery.write_candidates_csv(rows, out)
+        live = sum(1 for r in rows if r.get("live"))
+        print(f"\nClassified {len(rows)} {args.discover} tenant(s): {live} live, {len(he)} look higher-ed.")
+        for r in sorted(he, key=lambda r: (r.get("state") or "zz", r["slug"]))[:40]:
+            print(f"  higher-ed: {r['slug']:20} state={r.get('state') or '?':14} open={r.get('open', '')}  {str(r.get('name', ''))[:45]}")
+        print(f"\nCSV: {out}")
+        print("Review it, confirm each institution's state, then add verified higher-ed portals to config/sources.yaml.")
         return
 
     conn = db.get_conn()

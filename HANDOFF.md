@@ -30,6 +30,7 @@ python main.py --state missouri   # one state (incl. USAspending federal grants 
 python main.py --opportunities    # ranked feed        | --search "retention"
 python main.py --coverage         # national 50-state coverage scorecard (configured/represented/covered) + CSV
 python main.py --backfill-dates   # derive & store each doc's own date (from its text) for rows missing one
+python main.py --discover ionwave # enumerate+classify Bonfire/Ion Wave tenants -> reports/discovered_*.csv (slow, rate-limited)
 python main.py --doctor           # what's configured/working (deps, tokens, DB counts)
 python main.py --ingest-spend     # live Socrata payments -> normalized payments table (MA/CT/DE/MD)
 python main.py --normalize-payments   # resolve already-stored checkbook rows -> payments
@@ -104,11 +105,16 @@ Scrape filters: `--from/--to`, `--only-keyword`, `--only-competitor`, `--skip-fe
 - `--browser` (Playwright) is foundation-only; many JS sources need per-site interaction.
 
 ## Best next step (recommended)
-**Phase 3 endpoint-cracking** for more spending states (see docs/SPENDING_SOURCES.md): the near-term
-wins are **Oklahoma** (CKAN `datastore_search`, clean JSON, core territory) and **Arkansas**
-(server-rendered PHP tables at ark.org — reclassify to a real table parser). Also easy: make the
-Home dashboard tiles clickable (jump to the relevant tab), and wire the payments footprint into
-the Ops play as a per-account competitor signal.
+Goal is **national coverage**. Bonfire (24 higher-ed portals/12 states) + Ion Wave (8/3) are
+wired, and **`--discover` confirmed their higher-ed lever is exhausted** (both platforms are
+K-12-dominant; all identifiable higher-ed is wired). So the real state-count lever is the **next
+platform family: port Jaggaer** (`jaggaer.py` in the sibling `rfp-monitor-mvp`; parses public
+JAGGAER/SciQuest event pages — reaches universities Bonfire/Ion Wave don't), then OpenGov /
+DemandStar / PlanetBids. Same port pattern as Bonfire/Ion Wave (adapt to `utils.fetch` + the
+`documents` bid pipeline, dispatch in `bid_scraper`, offline test). Convert any `datetime.UTC`
+(3.11+) to `timezone.utc` for the 3.10 CI leg. Secondary: Phase-3 spending endpoint-cracking
+(docs/SPENDING_SOURCES.md — OK CKAN is low-yield, see memory), and the closed-app Windows
+Scheduled Task for auto-updates.
 
 ## Conventions
 - Branch per feature -> `pytest` -> commit (Co-Authored-By trailer) -> `merge --ff-only` into main
