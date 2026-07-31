@@ -29,6 +29,7 @@ python main.py                    # scrape everything (writes to the DB; NO CSVs
 python main.py --state missouri   # one state (incl. USAspending federal grants for MO/OK/KS/NE/AR)
 python main.py --opportunities    # ranked feed        | --search "retention"
 python main.py --coverage         # national 50-state coverage scorecard (configured/represented/covered) + CSV
+python main.py --backfill-dates   # derive & store each doc's own date (from its text) for rows missing one
 python main.py --doctor           # what's configured/working (deps, tokens, DB counts)
 python main.py --ingest-spend     # live Socrata payments -> normalized payments table (MA/CT/DE/MD)
 python main.py --normalize-payments   # resolve already-stored checkbook rows -> payments
@@ -71,6 +72,11 @@ Scrape filters: `--from/--to`, `--only-keyword`, `--only-competitor`, `--skip-fe
   token in `config/hubspot.yaml`. Copy / Save-CSV on the result.
 - **Home dashboard** — default UI tab: RAG (red/amber/green) status tiles + top-opportunities
   and competitor-footprint lists.
+- **Opportunities feed** (`--opportunities` / UI Opportunities tab) — ranked, type/keyword/category/
+  date filters. Feed defaults to hiding items whose OWN date is >1yr old (UI "incl. >1yr" toggle to
+  show them). Document dates are derived from the doc's text (`utils.derive_doc_date`; board-minutes
+  PDFs state the meeting date up top), stored on scrape, backfilled via `--backfill-dates`. FTS
+  `--search` sanitizes queries so `K-12` / `e-learning` / `AND` no longer raise an FTS5 syntax error.
 - **Setup doctor** (`--doctor` / UI "Check setup"). **Keyword/watchlist** tuning, **--retag**,
   date/keyword/competitor filters (UI + CLI), CI (GitHub Actions runs pytest).
 - **DB is the single source of truth** — `db/govspend_free.db` (SQLite). Indexed; every row

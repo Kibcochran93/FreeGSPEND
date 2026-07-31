@@ -23,7 +23,7 @@ from __future__ import annotations
 
 import datetime as dt
 
-from . import db
+from . import db, utils
 
 RECENCY_WINDOW_DAYS = 90
 TYPE_BONUS = {"bid": 5, "board_minutes": 0, "transparency": 0}
@@ -52,13 +52,24 @@ def score_document(row) -> float:
     return round(keyword_strength + recency_bonus + type_bonus, 1)
 
 
-def rank_opportunities(conn, limit: int = 50) -> list[dict]:
+def rank_opportunities(conn, limit: int = 50, max_age_days: int | None = 365) -> list[dict]:
+    """Ranked opportunity feed. `max_age_days` hides items whose OWN date (the
+    meeting/posting date, derived if not stored) is older than that many days;
+    pass None to include everything. Items with no determinable date are always
+    kept (we can't prove they're old). Each returned row carries a best-effort
+    `date` ('YYYY-MM-DD' or '')."""
     rows = db.all_documents(conn)
+    today = dt.date.today()
     scored = []
     for row in rows:
         score = score_document(row)
         if score <= 0:
             continue
+        doc_date = (row["date"] or "").strip() or utils.derive_doc_date(row["title"], row["text"])
+        if max_age_days is not None and doc_date:
+            d = utils.parse_date(doc_date)
+            if d is not None and (today - d).days > max_age_days:
+                continue   # older than the cutoff; undated rows fall through and stay
         scored.append({
             "score": score,
             "id": row["id"],
@@ -69,7 +80,7 @@ def rank_opportunities(conn, limit: int = 50) -> list[dict]:
             "url": row["url"],
             "categories": row["categories"],
             "watchlist_hits": row["watchlist_hits"],
-            "date": row["date"],
+            "date": doc_date,
             "scraped_at": row["scraped_at"],
         })
     scored.sort(key=lambda r: r["score"], reverse=True)

@@ -56,10 +56,15 @@ class Api:
     def list_states(self) -> list[str]:
         return list(_load_yaml(CONFIG_DIR / "sources.yaml").keys())
 
-    def opportunities(self, limit: int = 50) -> list[dict]:
+    def opportunities(self, limit: int = 5000, include_old: bool = False) -> list[dict]:
         conn = db.get_conn()
         try:
-            return opportunities.rank_opportunities(conn, limit=int(limit))
+            # Default: hide items whose own date is over a year old. The UI loads
+            # a high limit (not the top-50) so EVERY doc type is represented in
+            # the results - otherwise the type filter only ever sees the most
+            # numerous type (board minutes).
+            max_age = None if include_old else 365
+            return opportunities.rank_opportunities(conn, limit=int(limit), max_age_days=max_age)
         finally:
             conn.close()
 
@@ -491,6 +496,7 @@ HTML = r"""
           <select id="fType" onchange="applyOppFilters()"><option value="">All types</option></select>
           <label class="chk">From <input type="date" id="fFrom" oninput="applyOppFilters()"></label>
           <label class="chk">To <input type="date" id="fTo" oninput="applyOppFilters()"></label>
+          <label class="chk" title="By default the feed hides items whose own date is more than a year old"><input type="checkbox" id="fOlder" onchange="loadOpps()"> incl. &gt;1yr old</label>
           <button class="ghost" onclick="clearOppFilters()">Clear</button>
           <span class="spacer" style="flex:1"></span>
           <span class="hint" id="oppCount"></span>
@@ -668,7 +674,7 @@ HTML = r"""
     if (btn) btn.disabled = true;
     el('oppCount').textContent = 'Refreshing…';
     try {
-      _oppsAll = await api().opportunities(200);
+      _oppsAll = await api().opportunities(5000, el('fOlder') && el('fOlder').checked);
     } catch (e) {
       el('oppCount').textContent = 'Refresh failed';
       el('oppsTable').innerHTML = '<div class="empty">Could not load opportunities: ' + (e && e.message ? e.message : e) + '</div>';

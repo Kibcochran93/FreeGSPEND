@@ -185,6 +185,28 @@ def update_document_tags(conn: sqlite3.Connection, doc_id: int,
     )
 
 
+def backfill_dates(conn: sqlite3.Connection) -> dict:
+    """Populate the `date` column for documents that lack one, deriving each
+    document's own date from its text/title (utils.derive_doc_date). Lets the
+    Opportunities feed age-filter historical rows scraped before dates were
+    stored. Safe w.r.t. FTS (documents_fts mirrors only title+text). Idempotent:
+    only touches rows whose date is currently empty. Returns stats."""
+    rows = conn.execute(
+        "SELECT id, title, text FROM documents WHERE date IS NULL OR date = ''"
+    ).fetchall()
+    filled = 0
+    for r in rows:
+        d = utils.derive_doc_date(r["title"], r["text"])
+        if d:
+            conn.execute(
+                "UPDATE documents SET date = ?, updated_at = datetime('now') WHERE id = ?",
+                (d, r["id"]),
+            )
+            filled += 1
+    conn.commit()
+    return {"scanned": len(rows), "filled": filled}
+
+
 def insert_document(conn: sqlite3.Connection, *, doc_type: str, state: str = "",
                      institution: str = "", title: str = "", url: str = "",
                      text: str = "", date: str = "", categories: list[str] | None = None,
@@ -287,7 +309,14 @@ def insert_contact(conn: sqlite3.Connection, *, apollo_id: str | None, state: st
 
 def search(conn: sqlite3.Connection, query: str, limit: int = 25) -> list[sqlite3.Row]:
     """Full-text search across every document ever stored (all-time,
-    cumulative across runs), ranked by FTS5's built-in relevance."""
+    cumulative across runs), ranked by FTS5's built-in relevance.
+
+    The raw query is sanitized into a safe FTS5 MATCH expression first, so
+    ordinary terms with `-`/`:`/`"` or words like AND/OR (e.g. 'K-12',
+    'e-learning') return results instead of raising an FTS5 syntax error."""
+    match = utils.fts_match_query(query)
+    if not match:
+        return []
     return conn.execute(
         "SELECT d.id, d.doc_type, d.state, d.institution, d.title, d.url, d.date, "
         "       d.categories, d.watchlist_hits, "
@@ -296,7 +325,7 @@ def search(conn: sqlite3.Connection, query: str, limit: int = 25) -> list[sqlite
         "JOIN documents d ON d.id = documents_fts.rowid "
         "WHERE documents_fts MATCH ? "
         "ORDER BY rank LIMIT ?",
-        (query, limit),
+        (match, limit),
     ).fetchall()
 
 

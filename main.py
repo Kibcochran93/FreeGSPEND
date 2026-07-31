@@ -99,6 +99,7 @@ def parse_args():
     p.add_argument("--normalize-payments", action="store_true", help="Resolve stored state-checkbook rows into the normalized `payments` table (competitor/client footprint), then exit")
     p.add_argument("--ingest-spend", action="store_true", help="Pull state-checkbook payments live via Socrata (SODA) into the normalized `payments` table, then exit")
     p.add_argument("--reset-payments", action="store_true", help="Empty the payments table (regenerable via --ingest-spend), then exit")
+    p.add_argument("--backfill-dates", action="store_true", help="Derive & store each document's own date (from its text) for rows that lack one, so the Opportunities feed can age-filter them, then exit")
 
     p.add_argument("-q", "--quiet", action="store_true", help="Only log warnings/errors; still prints results (report path, summary, search output)")
     p.add_argument("-v", "--verbose", action="store_true", help="Verbose (DEBUG-level) logging")
@@ -216,6 +217,12 @@ def main():
         n = db.clear_payments(conn)
         print(f"Cleared {n} row(s) from the payments table. "
               "Repopulate with `python main.py --ingest-spend`.")
+        return
+
+    if args.backfill_dates:
+        stats = db.backfill_dates(conn)
+        print(f"Backfilled dates: {stats['filled']} of {stats['scanned']} dateless "
+              f"document(s) now carry a derived date.")
         return
 
     if args.ingest_spend:

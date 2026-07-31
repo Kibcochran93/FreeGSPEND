@@ -157,7 +157,8 @@ def run_scrape(
                         db.insert_document(
                             conn, doc_type="bid", state=state_key, institution=system["name"],
                             title=m["title"], url=m.get("detail_url") or m["source_url"],
-                            text=m.get("description", ""), date=m.get("date", ""),
+                            text=m.get("description", ""),
+                            date=m.get("date") or utils.derive_doc_date(m["title"], m.get("description", "")),
                             categories=m["categories"], source="bids",
                         )
                     result.bids.extend(new_matches)
@@ -180,6 +181,7 @@ def run_scrape(
                         db.insert_document(
                             conn, doc_type="board_minutes", state=state_key, institution=system["name"],
                             title=m["document_title"], url=m["document_url"], text=m.get("full_text", ""),
+                            date=utils.derive_doc_date(m["document_title"], m.get("full_text", "")),
                             categories=m["categories"], watchlist_hits=m["watchlist_hits"],
                             source="board_minutes",
                         )

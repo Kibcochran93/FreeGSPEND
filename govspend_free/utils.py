@@ -237,6 +237,51 @@ def parse_date(text: str | None) -> "_dt.date | None":
     return None
 
 
+# A document's OWN date (the meeting/posting date), for age-filtering the
+# Opportunities feed. The stored per-source `date` is usually empty and titles
+# rarely carry a year, but board-minutes/bid PDFs almost always state the date
+# near the top of their text - so scan the head of the text (then the title).
+_MONTHS_RE = ("january|february|march|april|may|june|july|august|september|"
+              "october|november|december")
+_TEXT_DATE_RES = (
+    re.compile(rf"\b(?:{_MONTHS_RE})\s+\d{{1,2}},?\s+20\d\d\b", re.I),  # March 9, 2026
+    re.compile(r"\b20\d\d[-/.]\d{1,2}[-/.]\d{1,2}\b"),                   # 2026-03-09
+    re.compile(r"\b\d{1,2}[-/.]\d{1,2}[-/.]20\d\d\b"),                   # 3/9/2026
+)
+
+
+def derive_doc_date(title: str | None, text: str | None, max_scan: int = 2000) -> str:
+    """Best-effort 'YYYY-MM-DD' for a document's own date, read from the head of
+    its text (then its title). Returns '' if nothing confident is found. Tries a
+    month-name date first (most reliable in minutes), then numeric forms."""
+    for source in (text, title):
+        if not source:
+            continue
+        head = str(source)[:max_scan]
+        for rx in _TEXT_DATE_RES:
+            m = rx.search(head)
+            if m:
+                parsed = parse_date(m.group(0))
+                if parsed:
+                    return parsed.isoformat()
+    return ""
+
+
+def fts_match_query(raw: str) -> str:
+    """Turn arbitrary user text into a SAFE FTS5 MATCH expression. Each
+    whitespace token becomes a double-quoted phrase, so `-`, `:`, `"`, and the
+    reserved words AND/OR/NOT/NEAR are treated as literal text instead of FTS5
+    operators (which otherwise raise `OperationalError` on ordinary queries like
+    'K-12', 'e-learning', or 'student-success'). Tokens joined by implicit AND.
+    Returns '' when there's nothing searchable."""
+    parts = []
+    for tok in (raw or "").split():
+        tok = tok.replace('"', '""')
+        if any(ch.isalnum() for ch in tok):   # skip pure-punctuation tokens
+            parts.append(f'"{tok}"')
+    return " ".join(parts)
+
+
 # --------------------------------------------------------------------------
 # Dedup state: a flat JSON set of hashes we've already reported, so re-runs
 # only surface genuinely new items.
