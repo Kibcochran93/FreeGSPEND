@@ -34,6 +34,7 @@ class ScrapeResult:
     minutes: list = field(default_factory=list)
     transparency: list = field(default_factory=list)
     federal: list = field(default_factory=list)
+    federal_rfps: list = field(default_factory=list)
     contracts: list = field(default_factory=list)
     contacts: list = field(default_factory=list)
     skipped: list = field(default_factory=list)
@@ -45,6 +46,7 @@ class ScrapeResult:
             "minutes": len(self.minutes),
             "transparency": len(self.transparency),
             "federal": len(self.federal),
+            "federal_rfps": len(self.federal_rfps),
             "contracts": len(self.contracts),
             "contracts_expiring_soon": sum(1 for c in self.contracts if c.get("expiring_soon")),
             "contacts": len(self.contacts),
@@ -107,6 +109,7 @@ def run_scrape(
     skip_board_minutes: bool = False,
     skip_transparency: bool = False,
     skip_federal: bool = False,
+    skip_sam: bool = False,
     skip_contracts: bool = False,
     skip_contacts: bool = False,
     criteria: "ScrapeCriteria | None" = None,
@@ -249,6 +252,34 @@ def run_scrape(
                 for s in skipped:
                     s.update(state=state_key, institution=f_src.get("name", ""), pass_type="federal")
                 result.skipped.extend(skipped)
+
+    # SAM.gov federal RFPs - a single nationwide pass (not per-state), so it runs
+    # once on a full scrape. Gated on config/sam.yaml (enabled + api_key).
+    if not skip_sam and selected_state is None:
+        from . import sam_gov
+        sam_cfg, sam_key = sam_gov.load_config()
+        if sam_cfg.get("enabled") and sam_key:
+            log.info("\n=== SAM.gov FEDERAL RFPs (nationwide) ===")
+            sam_matches, sam_skipped = sam_gov.scrape_sam_gov(
+                session, seen, matchers, api_key=sam_key,
+                lookback_days=int(sam_cfg.get("lookback_days", 3) or 3),
+                page_size=int(sam_cfg.get("page_size", 1000) or 1000),
+                max_pages=int(sam_cfg.get("max_pages", 1) or 1),
+            )
+            sam_matches = [m for m in sam_matches if criteria.keep(m["text"], m.get("date"))]
+            for m in sam_matches:
+                db.insert_document(
+                    conn, doc_type="federal_rfp", state=m.get("state", ""),
+                    institution=m.get("institution", ""), title=m["title"], url=m["url"],
+                    text=m["text"], date=m.get("date", ""), categories=m["categories"],
+                    source="sam_gov",
+                )
+            result.federal_rfps.extend(sam_matches)
+            for s in sam_skipped:
+                s.update(pass_type="sam")
+            result.skipped.extend(sam_skipped)
+        elif sam_cfg or sam_key:
+            log.info("  [sam] SAM.gov config present but disabled or missing api_key - skipping")
 
     if not skip_contacts:
         log.info("\n=== CONTACTS (Apollo.io) ===")

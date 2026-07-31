@@ -1,0 +1,20 @@
+# SAM.gov federal-RFP source (Get Opportunities Public API).
+# Nationwide federal solicitations, education-filtered, stored as doc_type='federal_rfp'.
+# Copy to config/sam.yaml (gitignored) and fill in your key.
+#
+# Get a FREE key: sign in at https://sam.gov -> Account Details -> "Request/View API Key".
+# Docs: https://open.gsa.gov/api/get-opportunities-public-api/
+# (You can also set the key via the SAM_API_KEY environment variable instead of here.)
+
+enabled: false            # set true once api_key is filled in
+api_key: ""               # your SAM.gov public API key (pat.../plain string)
+
+# How far back to pull each run. SAM.gov posts a lot nationwide, so keep this
+# modest; the pass warns if a window has more notices than it scanned.
+lookback_days: 3
+
+# SAM.gov hard-caps limit at 1000 per page. max_pages bounds how many pages
+# (i.e. how much of your daily key quota) one run may spend. Raise to widen
+# coverage of a busy window.
+page_size: 1000
+max_pages: 1

@@ -53,6 +53,11 @@ Scrape filters: `--from/--to`, `--only-keyword`, `--only-competitor`, `--skip-fe
   represented/covered + a CSV. Baseline at build time: 17/50 configured, 4/50 represented.
   ("represented" is doc-based; add per-source poll-health tracking later to distinguish
   "working, no match yet" from "never polled".)
+- **SAM.gov federal RFPs** (`sam_gov.py`, `--skip-sam`) — the federal solicitation board via the
+  keyed "Get Opportunities Public API"; one nationwide feed (all 50 states at once). Education
+  pre-screen + SEAtS category match -> `doc_type='federal_rfp'`, attributed to place-of-performance
+  state. Runs once per full scrape when `config/sam.yaml` (enabled + a free api_key) is set; gated/
+  off by default. Key travels as a query param, so the module logs only status codes (no key leak).
 - **USAspending federal grants** — keyless nationwide API; pulls Dept-of-Ed student-success
   grants (Title III/V, TRIO, GEAR UP) to colleges. Nationwide `doc_type='federal_award'`; feeds
   Opportunities + the Ops play. (Federal is nationwide but doesn't count as *state education* coverage.)
@@ -81,7 +86,7 @@ Scrape filters: `--from/--to`, `--only-keyword`, `--only-competitor`, `--skip-fe
 - **Ops play uses a read-only HubSpot Private App token, NOT the MCP/CLI.** HubSpot's remote MCP
   has no dynamic client registration and the `claude` CLI can't self-auth to it; a static
   read-scoped Private App token is the reliable path.
-- **Secrets/local configs gitignored:** `config/{apollo,llm,alerts,hubspot,ops}.yaml` + `gtm_profile.md`
+- **Secrets/local configs gitignored:** `config/{apollo,llm,alerts,hubspot,ops,sam}.yaml` + `gtm_profile.md`
   (`.example` templates committed). `config/{keywords,sources}.yaml` are committed tuning data;
   `config/normalize.yaml` is optional (code has sensible defaults).
 - **Socrata gotcha:** its JSON omits null fields, so a `$limit=1` probe on a payroll row makes the

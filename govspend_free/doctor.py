@@ -75,11 +75,14 @@ def gather() -> dict:
         "apollo.yaml (Contacts)": _config_status("apollo.yaml", secret_key="api_key"),
         "llm.yaml (AI Search)": _config_status("llm.yaml", secret_key="api_key"),
         "hubspot.yaml (Ops play)": _config_status("hubspot.yaml", secret_key="token"),
+        "sam.yaml (Federal RFPs)": _config_status("sam.yaml", secret_key="api_key"),
         "alerts.yaml (email)": _config_status("alerts.yaml"),
         "ops.yaml (Ops context)": _config_status("ops.yaml"),
     }
     if os.environ.get("HUBSPOT_TOKEN") or os.environ.get("HUBSPOT_PRIVATE_APP_TOKEN"):
         configs["hubspot.yaml (Ops play)"] = (OK, "HUBSPOT_TOKEN set in environment")
+    if os.environ.get("SAM_API_KEY"):
+        configs["sam.yaml (Federal RFPs)"] = (OK, "SAM_API_KEY set in environment")
 
     tools = {
         "claude CLI (--brief / Ops)": OK if shutil.which("claude") else MISSING,

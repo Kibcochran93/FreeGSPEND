@@ -235,6 +235,29 @@ context to Claude, and asks it to answer using just those sources (with
 citations) - it does not call out to the open web or use outside
 knowledge about these institutions, unlike GovSpend's own AI Search.
 
+## SAM.gov federal RFPs (optional, free key)
+
+The one **nationwide** RFP source: SAM.gov is the federal government's solicitation
+board, so a single keyed feed gives federal contract-opportunity coverage in all
+50 states at once (`sam_gov.py`, stored as `doc_type='federal_rfp'`). It's the
+federal *contract* complement to USAspending's federal *grants*.
+
+```bash
+cp config/sam.yaml.example config/sam.yaml   # then set enabled: true + paste your key
+python main.py                               # a nationwide SAM.gov pass runs once per full scrape
+python main.py --skip-sam                    # ...or skip it
+```
+
+Get a **free** key: sign in at https://sam.gov -> Account Details -> "Request API
+Key" (or set `SAM_API_KEY` in the environment). It's off until a key is present.
+Notices are filtered to education + a SEAtS bid category (so it doesn't flood the
+DB), attributed to the place-of-performance state, and surface in `--opportunities`
+/ `--search` like every other source. `lookback_days` / `max_pages` in `sam.yaml`
+bound how much of each busy day's postings one run pulls (it warns if a window had
+more than it scanned). The key is sent as a query parameter, so the tool logs only
+HTTP status codes - never the key. Federal RFPs are nationwide and do **not** count
+toward the state-education numbers in `--coverage`.
+
 ## Alerts (optional, free)
 
 ```bash

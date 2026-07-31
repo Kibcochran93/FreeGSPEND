@@ -71,6 +71,7 @@ def parse_args():
     p.add_argument("--doctor", action="store_true", help="Report what's configured/working (deps, config files, tokens, DB contents), then exit")
     p.add_argument("--skip-transparency", action="store_true")
     p.add_argument("--skip-federal", action="store_true", help="Skip the USAspending federal-grant pass")
+    p.add_argument("--skip-sam", action="store_true", help="Skip the SAM.gov federal-RFP pass (nationwide; runs only on a full scrape when config/sam.yaml is enabled)")
     p.add_argument("--skip-board-minutes", action="store_true")
     p.add_argument("--skip-bids", action="store_true")
     p.add_argument("--skip-contracts", action="store_true")
@@ -265,6 +266,7 @@ def main():
             skip_board_minutes=args.skip_board_minutes,
             skip_transparency=args.skip_transparency,
             skip_federal=args.skip_federal,
+            skip_sam=args.skip_sam,
             skip_contracts=args.skip_contracts,
             skip_contacts=args.skip_contacts,
             criteria=pipeline.ScrapeCriteria.build(
@@ -322,6 +324,7 @@ def _print_summary(result: pipeline.ScrapeResult):
     print(f"New board-minutes matches:  {c['minutes']}")
     print(f"New transparency matches:   {c['transparency']}")
     print(f"New federal grant awards:   {c['federal']}")
+    print(f"New SAM.gov federal RFPs:    {c['federal_rfps']}")
     print(f"New contract records:       {c['contracts']} ({c['contracts_expiring_soon']} expiring soon)")
     print(f"New contacts (Apollo):      {c['contacts']}")
     print(f"Sources skipped:            {c['skipped']}")
