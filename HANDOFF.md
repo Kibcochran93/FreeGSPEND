@@ -132,6 +132,10 @@ Same port pattern (adapt to `utils.fetch` + the `documents` bid pipeline, dispat
 CI leg. Secondary: Phase-3 spending endpoint-cracking
 (docs/SPENDING_SOURCES.md — OK CKAN is low-yield, see memory), and the closed-app Windows
 Scheduled Task for auto-updates.
+- **Then (after coverage):** **Pursue Mode** — a GO/REVIEW/NO-GO decision brief per Opportunities
+  row (deterministic disqualifier gates in Python, then an LLM fit rubric + positioning; same
+  philosophy as the Ops play). Full spec: `docs/PURSUE_MODE.md`. It deepens opportunities already
+  surfaced, so it sits **behind** the coverage wins above.
 
 ## Conventions
 - Branch per feature -> `pytest` -> commit (Co-Authored-By trailer) -> `merge --ff-only` into main
