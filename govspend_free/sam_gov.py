@@ -41,12 +41,18 @@ CONFIG_PATH = utils.ROOT_DIR / "config" / "sam.yaml"
 # 2-letter place-of-performance code -> sources.yaml/DB state key.
 _ABBR_TO_KEY = {abbr: state_key(name) for abbr, name in US_STATES}
 
-# Cheap education pre-screen (substring, lowercased) applied before the stricter
-# SEAtS category match, so we don't category-scan every federal notice.
+# Education-CONTEXT pre-screen (substring, lowercased), required before the SEAtS
+# category match. This must be strictly about higher-ed/education - NOT the SEAtS
+# topic words (retention, attendance, scheduling, ...), because those are ordinary
+# English that fire on unrelated federal procurement: "retention POND" (USDA),
+# "retention CLAMP" (Defense Logistics), "attendance at a conference", etc. A real
+# education RFP still passes here via its title or its soliciting org (e.g. issuer
+# "DEPARTMENT OF EDUCATION" contains "education"); the SEAtS category match then
+# supplies topic relevance.
 PREFILTER_TERMS = (
-    "student", "university", "college", "academ", "education", "campus",
-    "attendance", "retention", "engage", "enroll", "advising", "schedul",
-    "timetabl", "classroom", "case management", "early alert", "student success",
+    "student", "university", "college", "campus", "academ", "education",
+    "enroll", "higher ed", "community college", "school district", "registrar",
+    "faculty", "classroom", "coursework", "provost", "student success",
 )
 
 _DATE_RE = re.compile(r"\d{4}-\d{2}-\d{2}")

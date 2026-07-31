@@ -87,6 +87,24 @@ def test_sam_filters_to_seats_relevant_and_attributes_state():
     print("  OK - kept 1 SEAtS-relevant federal RFP, attributed state, deduped")
 
 
+def test_sam_rejects_non_education_retention_false_positives():
+    """The two real false positives from the first live run: 'retention' as an
+    ordinary English word on non-education federal procurement. The education
+    pre-screen must drop both (no student/university/college/etc. context)."""
+    matchers = _matchers()
+    payload = {"totalRecords": 2, "limit": 1000, "offset": 0, "opportunitiesData": [
+        {"noticeId": "F1", "title": "Retention Pond Vegetation Removal", "type": "Solicitation",
+         "fullParentPathName": "AGRICULTURE, DEPARTMENT OF.AGRICULTURAL RESEARCH SERVICE",
+         "postedDate": "2026-07-31", "placeOfPerformance": {"state": {"code": "FL"}}},
+        {"noticeId": "F2", "title": "10--RETENTION CLAMP,LEFT", "type": "Solicitation",
+         "fullParentPathName": "DEPT OF DEFENSE.DEFENSE LOGISTICS AGENCY.DLA LAND",
+         "postedDate": "2026-07-31"},
+    ]}
+    matches, skipped = sam_gov.scrape_sam_gov(FakeSession(payload), set(), matchers, api_key="K")
+    assert not skipped, skipped
+    assert matches == [], f"non-education 'retention' notices must be dropped, got {matches}"
+
+
 def test_sam_no_key_is_skipped():
     matchers = _matchers()
     matches, skipped = sam_gov.scrape_sam_gov(FakeSession(PAYLOAD), set(), matchers, api_key="")
