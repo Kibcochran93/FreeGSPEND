@@ -214,7 +214,8 @@ def test_api_start_brief_guards(monkeypatch):
 
 def test_api_home_stats(api_on_seeded_db):
     s = api_on_seeded_db.home_stats()
-    assert set(s) == {"cards", "top_opportunities", "top_competitors"}
+    assert set(s) == {"cards", "top_opportunities", "top_competitors", "has_data"}
+    assert s["has_data"] is True          # seeded DB has 1 document
     assert len(s["cards"]) == 6
     for c in s["cards"]:
         assert c["rag"] in {"green", "amber", "red", "gray"}

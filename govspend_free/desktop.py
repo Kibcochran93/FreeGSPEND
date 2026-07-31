@@ -88,6 +88,33 @@ class Api:
         finally:
             conn.close()
 
+    def export_rows_csv(self, rows: list | None = None, name: str = "export") -> dict:
+        """Write a list of row dicts to reports/<name>_<ts>.csv (the Opportunities
+        / Search 'Export CSV' buttons). Excel-friendly UTF-8-SIG. Returns
+        {ok, path} or {ok: False, error}."""
+        import csv
+        import re
+        import time
+        rows = rows or []
+        if not rows:
+            return {"ok": False, "error": "nothing to export"}
+        safe = re.sub(r"[^a-z0-9]+", "_", str(name).lower()).strip("_") or "export"
+        out = utils.REPORTS_DIR / f"{safe}_{time.strftime('%Y%m%dT%H%M%SZ', time.gmtime())}.csv"
+        cols: list[str] = []
+        for r in rows:
+            for k in r:
+                if k not in cols:
+                    cols.append(k)
+        try:
+            with out.open("w", encoding="utf-8-sig", newline="") as fh:
+                w = csv.DictWriter(fh, fieldnames=cols)
+                w.writeheader()
+                for r in rows:
+                    w.writerow({k: r.get(k, "") for k in cols})
+            return {"ok": True, "path": str(out)}
+        except OSError as exc:
+            return {"ok": False, "error": str(exc)}
+
     def open_external(self, url: str) -> None:
         """Open a result link in the user's real browser, not the app window."""
         if url:
@@ -159,7 +186,8 @@ class Api:
             {"label": "States covered", "value": f"{states_with}/{total_states}", "rag": cov_rag,
              "sub": "with scraped data"},
         ]
-        return {"cards": cards, "top_opportunities": top_opps, "top_competitors": top_comp}
+        return {"cards": cards, "top_opportunities": top_opps, "top_competitors": top_comp,
+                "has_data": total_docs > 0}
 
     # ------------------------------ scrape ------------------------------
 
@@ -399,6 +427,18 @@ HTML = r"""
   #playResult td { font-size: 12.5px; }
   .gate-warn { color: #92400e; background: #fffbeb; border: 1px solid #fde68a;
     border-radius: 8px; padding: 10px 12px; }
+  .callout { background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 10px;
+    padding: 14px 16px; margin: 8px 0 14px; color: #1e3a5f; }
+  .callout strong { color: #1e40af; }
+  .callout ol { margin: 8px 0 0 20px; padding: 0; } .callout li { margin: 2px 0; }
+  .callout a { color: var(--accent); cursor: pointer; text-decoration: underline; font-weight: 600; }
+  button.big { padding: 11px 22px; font-size: 14px; }
+  .tabhelp { color: var(--muted); font-size: 12px; margin: 2px 0 12px; }
+  details.adv { margin-top: 12px; border-top: 1px solid var(--line); padding-top: 10px; }
+  details.adv > summary { cursor: pointer; color: var(--accent); font-size: 13px; font-weight: 600; list-style: none; }
+  details.adv > summary::-webkit-details-marker { display: none; }
+  details.adv > summary::before { content: "\25B8 "; }
+  details.adv[open] > summary::before { content: "\25BE "; }
   .gate-ok { color: #15803d; }
   .status { margin-top: 10px; font-size: 13px; }
   .status.ok { color: #15803d; } .status.err { color: var(--soon); }
@@ -455,9 +495,9 @@ HTML = r"""
     <button class="tab active" data-tab="home">Home</button>
     <button class="tab" data-tab="opps">Opportunities</button>
     <button class="tab" data-tab="search">Search</button>
-    <button class="tab" data-tab="exp">Expirations</button>
-    <button class="tab" data-tab="ops">Ops</button>
-    <button class="tab" data-tab="scrape">Scrape</button>
+    <button class="tab" data-tab="exp">Expiring Contracts</button>
+    <button class="tab" data-tab="ops">Account Priorities</button>
+    <button class="tab" data-tab="scrape">Update Data</button>
   </nav>
 
   <main>
@@ -473,6 +513,7 @@ HTML = r"""
           <span class="dot rag-green"></span> good &nbsp;
           <span class="dot rag-amber"></span> watch &nbsp;
           <span class="dot rag-red"></span> act now.</p>
+        <div id="homeGetStarted"></div>
         <div id="homeGrid" class="homegrid"></div>
         <div class="row" style="margin-top:18px; align-items:flex-start; gap:24px">
           <div style="flex:2; min-width:300px"><strong>Top opportunities</strong><div id="homeOpps"></div></div>
@@ -499,9 +540,11 @@ HTML = r"""
           <label class="chk">To <input type="date" id="fTo" oninput="applyOppFilters()"></label>
           <label class="chk" title="By default the feed hides items whose own date is more than a year old"><input type="checkbox" id="fOlder" onchange="loadOpps()"> incl. &gt;1yr old</label>
           <button class="ghost" onclick="clearOppFilters()">Clear</button>
+          <button class="ghost" onclick="exportOpps()" title="Save the rows shown below to a CSV you can open in Excel">Export CSV</button>
           <span class="spacer" style="flex:1"></span>
           <span class="hint" id="oppCount"></span>
         </div>
+        <p class="hint" id="oppExportNote"></p>
         <div id="oppsTable"></div>
       </div>
     </section>
@@ -509,19 +552,31 @@ HTML = r"""
     <!-- Search -->
     <section id="tab-search" class="tabpane hidden">
       <div class="panel">
+        <strong>Search</strong>
+        <p class="tabhelp">Search everything you've collected &mdash; bid titles, board-minutes text, and spending rows. Try a vendor or a topic (e.g. <em>attendance software</em>, <em>Ellucian</em>, <em>K-12</em>).</p>
         <form class="row" onsubmit="doSearch(); return false;">
-          <input type="text" id="q" placeholder="Full-text search titles &amp; documents (e.g. attendance software)">
+          <input type="text" id="q" placeholder="Search titles &amp; documents...">
           <button class="primary" type="submit">Search</button>
         </form>
+        <div class="row" id="searchFilters" style="margin-top:8px">
+          <select id="sType" onchange="applySearchFilters()"><option value="">All types</option></select>
+          <select id="sState" onchange="applySearchFilters()"><option value="">All states</option></select>
+          <button class="ghost" onclick="exportSearch()" title="Save the results below to a CSV you can open in Excel">Export CSV</button>
+          <span class="spacer" style="flex:1"></span>
+          <span class="hint" id="searchCount"></span>
+        </div>
+        <p class="hint" id="searchExportNote"></p>
         <div id="searchTable"></div>
       </div>
     </section>
 
-    <!-- Expirations -->
+    <!-- Expiring Contracts -->
     <section id="tab-exp" class="tabpane hidden">
       <div class="panel">
+        <strong>Expiring contracts</strong>
+        <p class="tabhelp">Vendor contracts with a known end date coming up &mdash; a renewal window is a good time to reach out. Only appears for states that publish contract end dates.</p>
         <div class="row">
-          <label class="chk">Within <input type="number" id="days" value="180" min="1" max="3650" style="width:90px"> days</label>
+          <label class="chk">Ending within <input type="number" id="days" value="180" min="1" max="3650" style="width:90px" onchange="loadExp()"> days</label>
           <button class="primary" onclick="loadExp()">Show</button>
         </div>
         <div id="expTable"></div>
@@ -557,39 +612,47 @@ HTML = r"""
       </div>
     </section>
 
-    <!-- Scrape -->
+    <!-- Update Data -->
     <section id="tab-scrape" class="tabpane hidden">
       <div class="panel">
-        <div class="row" style="margin-bottom:6px">
-          <button class="ghost" onclick="checkSetup()">Check setup</button>
-          <span class="hint">deps, config files, tokens, and what's in the local DB</span>
-        </div>
-        <pre id="doctorOut" class="brief-body hidden" style="max-height:320px"></pre>
+        <strong>Update your data</strong>
+        <p class="tabhelp">Collect the latest bids, board minutes, spending, and federal opportunities from the public sources. This can take a few minutes &mdash; progress shows below.</p>
         <div class="row">
-          <label class="chk">State:
+          <label class="chk">States:
             <select id="state"><option value="">All states</option></select>
           </label>
-          <label class="chk"><input type="checkbox" id="skip_bids"> skip bids</label>
-          <label class="chk"><input type="checkbox" id="skip_board_minutes"> skip minutes</label>
-          <label class="chk"><input type="checkbox" id="skip_transparency"> skip transparency</label>
-          <label class="chk"><input type="checkbox" id="skip_federal"> skip federal</label>
-          <label class="chk" title="SAM.gov federal RFPs run once per full scrape when config/sam.yaml is enabled (uses your daily API key quota)"><input type="checkbox" id="skip_sam"> skip SAM.gov</label>
-          <label class="chk"><input type="checkbox" id="skip_contracts"> skip contracts</label>
-          <label class="chk"><input type="checkbox" id="inc_contacts"> include Apollo contacts (uses credits)</label>
-          <label class="chk"><input type="checkbox" id="use_browser"> render JS sources (headless browser, slower)</label>
+          <button class="primary big" id="runBtn" onclick="runScrape()">Update everything</button>
+          <span class="hint">Runs every source for the selected state(s).</span>
         </div>
-        <div class="row" style="margin-top:10px">
-          <label class="chk">From <input type="date" id="scrape_from"></label>
-          <label class="chk">To <input type="date" id="scrape_to"></label>
-          <input type="text" id="scrape_keyword" placeholder="only keyword(s), comma-separated" style="min-width:200px">
-          <input type="text" id="scrape_competitor" placeholder="only competitor(s), e.g. Ellucian, Civitas" style="min-width:200px">
-        </div>
-        <div class="row" style="margin-top:12px">
-          <button class="primary" id="runBtn" onclick="runScrape()">Run scrape</button>
-          <span class="hint">Criteria are optional filters &mdash; leave blank to scrape everything. A date range also skips downloading out-of-range minutes PDFs.</span>
-        </div>
+
+        <details class="adv">
+          <summary>Advanced options</summary>
+          <p class="hint" style="margin-top:8px">Skip sources you don't need, or narrow the run. Leave everything unchecked to collect it all.</p>
+          <div class="row">
+            <label class="chk"><input type="checkbox" id="skip_bids"> skip bids</label>
+            <label class="chk"><input type="checkbox" id="skip_board_minutes"> skip board minutes</label>
+            <label class="chk"><input type="checkbox" id="skip_transparency"> skip spending</label>
+            <label class="chk"><input type="checkbox" id="skip_federal"> skip federal grants</label>
+            <label class="chk" title="SAM.gov federal RFPs run once per full update when config/sam.yaml is enabled (uses your daily API key quota)"><input type="checkbox" id="skip_sam"> skip SAM.gov RFPs</label>
+            <label class="chk"><input type="checkbox" id="skip_contracts"> skip contracts</label>
+            <label class="chk"><input type="checkbox" id="inc_contacts"> include contact lookup (Apollo &mdash; uses credits)</label>
+            <label class="chk" title="Render JavaScript-heavy sites with a headless browser (slower)"><input type="checkbox" id="use_browser"> render JS-heavy sources (slower)</label>
+          </div>
+          <div class="row" style="margin-top:10px">
+            <label class="chk">From <input type="date" id="scrape_from"></label>
+            <label class="chk">To <input type="date" id="scrape_to"></label>
+            <input type="text" id="scrape_keyword" placeholder="only keyword(s), comma-separated" style="min-width:200px">
+            <input type="text" id="scrape_competitor" placeholder="only competitor(s), e.g. Ellucian, Civitas" style="min-width:200px">
+          </div>
+          <div class="row" style="margin-top:12px">
+            <button class="ghost" onclick="checkSetup()">Check setup</button>
+            <span class="hint">Verify dependencies, config files, tokens, and what's in your local database.</span>
+          </div>
+          <pre id="doctorOut" class="brief-body hidden" style="max-height:320px; margin-top:10px"></pre>
+        </details>
+
         <div id="scrapeStatus" class="status"></div>
-        <div id="scrapeLog"></div>
+        <div id="scrapeLog" class="hidden"></div>
       </div>
     </section>
   </main>
@@ -622,7 +685,7 @@ HTML = r"""
   });
   const api = () => window.pywebview.api;
   const el = (id) => document.getElementById(id);
-  const TYPE_LABELS = { bid: 'Bid/RFP', board_minutes: 'Board minutes', transparency: 'Spending', federal_award: 'Federal grant' };
+  const TYPE_LABELS = { bid: 'Bid/RFP', board_minutes: 'Board minutes', transparency: 'Spending', federal_award: 'Federal grant', federal_rfp: 'Federal RFP' };
   const typeLabel = (t) => TYPE_LABELS[t] || t;
 
   // ---- tab switching ----
@@ -636,6 +699,7 @@ HTML = r"""
     else if (t.dataset.tab === 'exp') loadExp();
     else if (t.dataset.tab === 'ops') checkOpsGate();
   });
+  function showTab(name) { const b = document.querySelector('.tab[data-tab="' + name + '"]'); if (b) b.click(); }
 
   // ---- helpers ----
   function link(url, text) {
@@ -657,9 +721,9 @@ HTML = r"""
     else c.textContent = (content == null ? '' : String(content));
     return c;
   }
-  function renderTable(mount, cols, rows, buildRow) {
+  function renderTable(mount, cols, rows, buildRow, emptyHtml) {
     const m = el(mount); m.innerHTML = '';
-    if (!rows || !rows.length) { m.innerHTML = '<div class="empty">Nothing to show yet.</div>'; return; }
+    if (!rows || !rows.length) { m.innerHTML = '<div class="empty">' + (emptyHtml || 'Nothing to show yet.') + '</div>'; return; }
     const table = document.createElement('table');
     const thead = document.createElement('thead'); const htr = document.createElement('tr');
     cols.forEach(c => { const th = document.createElement('th'); th.textContent = c; htr.appendChild(th); });
@@ -671,6 +735,18 @@ HTML = r"""
 
   // ---- Opportunities ----
   let _oppsAll = [];
+  let _oppsShown = [];
+
+  async function exportRows(rows, name, noteMount) {
+    const note = el(noteMount);
+    if (!rows || !rows.length) { if (note) note.textContent = 'Nothing to export yet.'; return; }
+    if (note) note.textContent = 'Saving...';
+    try {
+      const r = await api().export_rows_csv(rows, name);
+      if (note) note.textContent = r.ok ? ('Saved ' + rows.length + ' rows to ' + r.path) : ('Export failed: ' + r.error);
+    } catch (e) { if (note) note.textContent = 'Export failed.'; }
+  }
+  function exportOpps() { exportRows(_oppsShown, 'opportunities', 'oppExportNote'); }
 
   async function loadOpps() {
     const btn = el('refreshBtn');
@@ -679,8 +755,8 @@ HTML = r"""
     try {
       _oppsAll = await api().opportunities(5000, el('fOlder') && el('fOlder').checked);
     } catch (e) {
-      el('oppCount').textContent = 'Refresh failed';
-      el('oppsTable').innerHTML = '<div class="empty">Could not load opportunities: ' + (e && e.message ? e.message : e) + '</div>';
+      el('oppCount').textContent = '';
+      el('oppsTable').innerHTML = '<div class="empty">Couldn\'t load opportunities. Click Refresh to try again.</div>';
       if (btn) btn.disabled = false;
       return;
     }
@@ -730,8 +806,12 @@ HTML = r"""
       }
       return true;
     });
+    _oppsShown = rows;
     el('oppCount').textContent = `${rows.length} of ${_oppsAll.length}`;
-    renderOppRows(rows);
+    const empty = _oppsAll.length
+      ? 'No opportunities match your filters. <a onclick="clearOppFilters()">Clear filters</a> to see all ' + _oppsAll.length + '.'
+      : 'No opportunities yet. Go to <a onclick="showTab(\'scrape\')">Update Data</a> and click <strong>Update everything</strong>.';
+    renderOppRows(rows, empty);
   }
 
   function clearOppFilters() {
@@ -743,7 +823,7 @@ HTML = r"""
     if (wasOld) loadOpps(); else applyOppFilters();
   }
 
-  function renderOppRows(rows) {
+  function renderOppRows(rows, emptyHtml) {
     renderTable('oppsTable', ['Score', 'Type', 'State / Institution', 'Title', 'Tags', ''], rows, (r) => {
       const tr = document.createElement('tr');
       const s = td(r.score); s.className = 'score';
@@ -760,14 +840,21 @@ HTML = r"""
       btn.onclick = () => startBrief(r.id, r.institution || `doc ${r.id}`);
       tr.appendChild(td(btn));
       return tr;
-    });
+    }, emptyHtml);
   }
 
   // ---- Home / Dashboard ----
   async function loadHome() {
     let d;
     try { d = await api().home_stats(); }
-    catch (e) { el('homeGrid').innerHTML = '<div class="empty">Could not load dashboard: ' + (e && e.message ? e.message : e) + '</div>'; return; }
+    catch (e) { el('homeGrid').innerHTML = '<div class="empty">Couldn\'t load the dashboard. Click Refresh; if it keeps failing, open Update Data &rarr; Advanced &rarr; Check setup.</div>'; return; }
+    const gs = el('homeGetStarted');
+    if (gs) gs.innerHTML = d.has_data ? '' :
+      '<div class="callout"><strong>Welcome! No data yet.</strong> Collect your first batch to fill this dashboard:' +
+      '<ol><li>Go to <a onclick="showTab(\'scrape\')">Update Data</a>.</li>' +
+      '<li>Pick your states (or leave &ldquo;All states&rdquo;).</li>' +
+      '<li>Click <strong>Update everything</strong> and watch the progress log.</li></ol>' +
+      'When it finishes, <a onclick="showTab(\'opps\')">Opportunities</a> and this dashboard fill in automatically.</div>';
     const grid = el('homeGrid'); grid.innerHTML = '';
     (d.cards || []).forEach(c => {
       const card = document.createElement('div');
@@ -788,7 +875,7 @@ HTML = r"""
       return tr;
     });
     const comp = el('homeComp'); comp.innerHTML = '';
-    if (!(d.top_competitors || []).length) { comp.innerHTML = '<div class="empty">No payments yet &mdash; run --ingest-spend.</div>'; }
+    if (!(d.top_competitors || []).length) { comp.innerHTML = '<div class="empty">No competitor spending data yet.</div>'; }
     else d.top_competitors.forEach(c => {
       const row = document.createElement('div'); row.className = 'minirow';
       const a = document.createElement('span'); a.textContent = c.vendor;
@@ -798,9 +885,34 @@ HTML = r"""
   }
 
   // ---- Search ----
+  let _searchAll = [];
+  let _searchShown = [];
   async function doSearch() {
-    const q = el('q').value;
-    const rows = await api().search(q, 100);
+    const q = el('q').value.trim();
+    if (!q) { el('searchTable').innerHTML = '<div class="empty">Type something to search.</div>'; el('searchCount').textContent=''; return; }
+    el('searchCount').textContent = 'Searching...';
+    el('searchExportNote').textContent = '';
+    try { _searchAll = await api().search(q, 200); }
+    catch (e) { el('searchTable').innerHTML = '<div class="empty">Search failed. Try a simpler term.</div>'; el('searchCount').textContent=''; return; }
+    fillSelect('sType', [...new Set(_searchAll.map(r => r.doc_type).filter(Boolean))].sort(), typeLabel);
+    fillSelect('sState', [...new Set(_searchAll.map(r => r.state).filter(Boolean))].sort(), (s) => s);
+    applySearchFilters();
+  }
+  function fillSelect(id, values, labelFn) {
+    const sel = el(id), cur = sel.value;
+    const first = sel.options[0] ? sel.options[0].outerHTML : '';
+    sel.innerHTML = first;
+    values.forEach(v => { const o = document.createElement('option'); o.value = v; o.textContent = labelFn(v); sel.appendChild(o); });
+    sel.value = cur;
+  }
+  function applySearchFilters() {
+    const typ = el('sType').value, st = el('sState').value;
+    const rows = _searchAll.filter(r => (!typ || r.doc_type === typ) && (!st || r.state === st));
+    _searchShown = rows;
+    el('searchCount').textContent = _searchAll.length ? (rows.length + ' of ' + _searchAll.length) : '';
+    const empty = _searchAll.length
+      ? 'No results match these filters. <a onclick="clearSearchFilters()">Clear</a> them.'
+      : 'No matches. Try a different term, or collect more via <a onclick="showTab(\'scrape\')">Update Data</a>.';
     renderTable('searchTable', ['Type', 'State / Institution', 'Title', 'Snippet'], rows, (r) => {
       const tr = document.createElement('tr');
       tr.appendChild(td(Object.assign(document.createElement('span'), {className:'type', textContent:typeLabel(r.doc_type)})));
@@ -808,13 +920,17 @@ HTML = r"""
       tr.appendChild(td(link(r.url, r.title || '(untitled)')));
       tr.appendChild(td(r.snippet || ''));
       return tr;
-    });
+    }, empty);
   }
+  function clearSearchFilters() { el('sType').value = ''; el('sState').value = ''; applySearchFilters(); }
+  function exportSearch() { exportRows(_searchShown, 'search', 'searchExportNote'); }
 
   // ---- Expirations ----
   async function loadExp() {
     const days = parseInt(el('days').value, 10) || 180;
-    const rows = await api().expirations(days);
+    let rows;
+    try { rows = await api().expirations(days); }
+    catch (e) { el('expTable').innerHTML = '<div class="empty">Couldn\'t load contracts. Try again.</div>'; return; }
     renderTable('expTable', ['Vendor', 'State / Institution', 'Ends', 'Days left', 'Source'], rows, (r) => {
       const tr = document.createElement('tr');
       tr.appendChild(td(r.vendor || ''));
@@ -827,7 +943,7 @@ HTML = r"""
       tr.appendChild(td(d));
       tr.appendChild(td(link(r.source_url, 'source')));
       return tr;
-    });
+    }, 'No contracts with an upcoming end date. This section only fills in for states that publish contract end dates (e.g. CA / GA / NC).');
   }
 
   // ---- Ops: Full Motion play ----
@@ -1000,8 +1116,9 @@ HTML = r"""
   async function runScrape() {
     el('runBtn').disabled = true;
     el('scrapeStatus').className = 'status';
-    el('scrapeStatus').textContent = 'Scraping...';
+    el('scrapeStatus').textContent = 'Updating… this can take a few minutes.';
     el('scrapeLog').textContent = '';
+    el('scrapeLog').classList.remove('hidden');
     const opts = {
       state: el('state').value,
       skip_bids: el('skip_bids').checked,
