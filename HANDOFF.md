@@ -46,7 +46,11 @@ Scrape filters: `--from/--to`, `--only-keyword`, `--only-competitor`, `--skip-fe
   plus **Bonfire** portals via their public JSON endpoint (`bonfire.py`, source `type: bonfire`;
   no browser). **24 verified-live higher-ed portals across 12 states wired** (TX/UT-System is the
   biggest cluster). Bonfire rate-limits by IP across all tenants, so `bonfire.py` backs off on
-  HTTP 429 (process-wide cooldown). Ported from the sibling `rfp-monitor-mvp` tool; widen via its
+  HTTP 429 (process-wide cooldown). **Ion Wave** portals too (`ionwave.py`, source `type: ionwave`;
+  ASP.NET RadGrid parsed via stdlib HTMLParser + the hidden `_clientKeyValues` BidID map, no
+  browser). 8 portals across IA/TX/MO wired; Iowa State University (`slug: iastate`) is the
+  higher-ed anchor (verified live), rest are curated K-12 ISDs + Grayson College. Ported from
+  the sibling `rfp-monitor-mvp` tool; widen via its
   Common-Crawl discovery pass. Core-territory (MO/OK/KS/NE) Bonfire presence is thin.
 - **National coverage scorecard** (`--coverage`, `coverage.py`) — the tool's GOAL is nationwide
   (50-state) coverage; this is the meta-tool that measures it. Reconciles configured education

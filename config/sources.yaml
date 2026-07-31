@@ -84,6 +84,21 @@ texas:
       bid_boards: [{type: bonfire, slug: tccd, url: "https://tccd.bonfirehub.com/portal/?tab=openOpportunities"}]
     - name: "Texas Southmost College"
       bid_boards: [{type: bonfire, slug: tsc, url: "https://tsc.bonfirehub.com/portal/?tab=openOpportunities"}]
+    # Ion Wave RFP portals (type: ionwave; ASP.NET RadGrid, no browser). Grayson College
+    # is higher-ed; the ISDs are K-12 (adjacent SEAtS fit - the category filter keeps only
+    # relevant bids). graysoncollege + fisd verified live 2026-07-31; others rfp-monitor-curated.
+    - name: "Grayson College"
+      bid_boards: [{type: ionwave, slug: graysoncollege, url: "https://graysoncollege.ionwave.net/SourcingEvents.aspx?SourceType=1"}]
+    - name: "Frisco Independent School District"
+      bid_boards: [{type: ionwave, slug: fisd, url: "https://fisd.ionwave.net/SourcingEvents.aspx?SourceType=1"}]
+    - name: "Plano Independent School District"
+      bid_boards: [{type: ionwave, slug: pisd, url: "https://pisd.ionwave.net/SourcingEvents.aspx?SourceType=1"}]
+    - name: "Edinburg Consolidated Independent School District"
+      bid_boards: [{type: ionwave, slug: ecisd, url: "https://ecisd.ionwave.net/SourcingEvents.aspx?SourceType=1"}]
+    - name: "San Angelo Independent School District"
+      bid_boards: [{type: ionwave, slug: saisd, url: "https://saisd.ionwave.net/SourcingEvents.aspx?SourceType=1"}]
+    - name: "Brownsville Independent School District"
+      bid_boards: [{type: ionwave, slug: bisdpurchasing, url: "https://bisdpurchasing.ionwave.net/SourcingEvents.aspx?SourceType=1"}]
   transparency:
     - name: "Texas Comptroller Transparency Dashboards"
       url: "https://comptroller.texas.gov/transparency/open-data/dashboards.php"
@@ -384,6 +399,8 @@ missouri:
           slug: stlcc
           url: "https://stlcc.bonfirehub.com/portal/?tab=openOpportunities"
           notes: "Open opportunities via the public getOpenPublicOpportunitiesSectionData JSON."
+    - name: "Lee's Summit R-7 School District"
+      bid_boards: [{type: ionwave, slug: lsr7ebid, url: "https://lsr7ebid.ionwave.net/SourcingEvents.aspx?SourceType=1"}]
   federal_grants:
     - name: "USAspending federal student-success grants (MO)"
       type: usaspending
@@ -446,3 +463,10 @@ west_virginia:
   university_systems:
     - name: "Marshall University"
       bid_boards: [{type: bonfire, slug: marshall, url: "https://marshall.bonfirehub.com/portal/?tab=openOpportunities"}]
+
+# Iowa State University publishes bids on Ion Wave (ASP.NET RadGrid; type: ionwave).
+# Verified live 2026-07-31 (8 open bids). Iowa borders the core MO/NE territory.
+iowa:
+  university_systems:
+    - name: "Iowa State University"
+      bid_boards: [{type: ionwave, slug: iastate, url: "https://iastate.ionwave.net/SourcingEvents.aspx?SourceType=1"}]

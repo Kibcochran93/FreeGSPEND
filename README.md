@@ -9,7 +9,7 @@ machine, on whatever schedule you want. No subscription, no vendor lock-in
 
 | GovSpend module         | Here                                                              | Cost              |
 | ------------------------ | ------------------------------------------------------------------ | ----------------- |
-| Bids & RFPs               | `bid_scraper.py` - native HTML bid boards; `bonfire.py` - Bonfire portals via their public JSON endpoint (no browser) | Free              |
+| Bids & RFPs               | `bid_scraper.py` - native HTML bid boards; `bonfire.py` - Bonfire JSON portals; `ionwave.py` - Ion Wave RadGrid portals (all browser-free) | Free              |
 | Meeting Intelligence      | `board_minutes_scraper.py` - downloads + keyword-searches minutes  | Free              |
 | Spending & POs            | `transparency_scraper.py` - best-effort CSV/PDF downloads          | Free              |
 | Co-Ops & Contracts        | `contracts_scraper.py` - detects vendor/start/end date columns, flags expirations | Free |

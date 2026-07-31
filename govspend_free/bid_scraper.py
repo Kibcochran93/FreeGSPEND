@@ -27,6 +27,10 @@ def scrape_bid_board(source: dict, session, seen: set[str], matchers) -> tuple[l
         from . import bonfire
         return bonfire.scrape_bonfire_portal(source, session, seen, matchers)
 
+    if source.get("type") == "ionwave":
+        from . import ionwave
+        return ionwave.scrape_ionwave_portal(source, session, seen, matchers)
+
     url = source["url"]
     new_matches: list[dict] = []
 
