@@ -86,6 +86,7 @@ def parse_args():
     # Query-only modes (no scraping, read from the local DB)
     p.add_argument("--search", metavar="QUERY", help="Full-text search everything ever scraped, then exit")
     p.add_argument("--opportunities", action="store_true", help="Print the ranked opportunities feed, then exit")
+    p.add_argument("--coverage", action="store_true", help="Print the national (50-state) coverage scorecard - configured vs represented vs covered - and write reports/coverage_<ts>.csv, then exit")
     p.add_argument("--play", action="store_true", help="Run the Ops 'Full Motion' account-prioritization play (read-only HubSpot via a Private App token), then exit")
     p.add_argument("--expirations", type=int, nargs="?", const=180, metavar="DAYS",
                     help="Print contracts expiring within DAYS (default 180), then exit")
@@ -137,6 +138,36 @@ def main():
 
     if args.opportunities:
         opportunities.print_opportunities(opportunities.rank_opportunities(conn))
+        return
+
+    if args.coverage:
+        import time as _time
+        from govspend_free import coverage as coverage_mod
+        rows = coverage_mod.build_coverage(conn, sources)
+        s = coverage_mod.summarize(rows)
+        n_cov, n_rep, n_cfg, n_missing = (len(s["covered"]), len(s["represented"]),
+                                          len(s["configured"]), len(s["missing"]))
+        print("\n=== National coverage scorecard (education RFP/bid sources) ===")
+        print(f"  Covered     (>=2 institutions w/ docs): {n_cov:>2}/50  {', '.join(s['covered']) or '-'}")
+        print(f"  Represented (>=1 institution w/ docs):  {n_rep:>2}/50  {', '.join(s['represented']) or '-'}")
+        print(f"  Configured  (sources set, no docs yet): {n_cfg:>2}/50  {', '.join(s['configured']) or '-'}")
+        print(f"  Missing     (no education source):      {n_missing:>2}/50")
+        print( "  ---")
+        print(f"  Represented or better: {len(s['represented_or_better'])}/50 states")
+        print(f"  Configured or better:  {len(s['configured_or_better'])}/50 states")
+        print(f"  Federal grants configured: {len(s['with_federal'])}/50 states")
+        shown = [r for r in rows if r.status != "missing"]
+        if shown:
+            order = {"covered": 0, "represented": 1, "configured": 2}
+            print("\n  State  Status       Src  Inst  Docs  Families")
+            for r in sorted(shown, key=lambda r: (order[r.status], r.abbr)):
+                print(f"  {r.abbr:<5}  {r.status:<11}  {r.configured_sources:>3}  "
+                      f"{r.institutions_with_docs:>4}  {r.education_docs:>4}  {','.join(r.families)}")
+        print(f"\n  Missing ({n_missing}): {', '.join(s['missing'])}")
+        ts = _time.strftime("%Y%m%dT%H%M%SZ", _time.gmtime())
+        out = utils.REPORTS_DIR / f"coverage_{ts}.csv"
+        coverage_mod.write_coverage_csv(rows, out)
+        print(f"\n  CSV: {out}")
         return
 
     if args.play:

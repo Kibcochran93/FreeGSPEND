@@ -28,6 +28,7 @@ python -m govspend_free.desktop   # desktop UI: Home (RAG dashboard) / Opportuni
 python main.py                    # scrape everything (writes to the DB; NO CSVs)
 python main.py --state missouri   # one state (incl. USAspending federal grants for MO/OK/KS/NE/AR)
 python main.py --opportunities    # ranked feed        | --search "retention"
+python main.py --coverage         # national 50-state coverage scorecard (configured/represented/covered) + CSV
 python main.py --doctor           # what's configured/working (deps, tokens, DB counts)
 python main.py --ingest-spend     # live Socrata payments -> normalized payments table (MA/CT/DE/MD)
 python main.py --normalize-payments   # resolve already-stored checkbook rows -> payments
@@ -46,9 +47,15 @@ Scrape filters: `--from/--to`, `--only-keyword`, `--only-competitor`, `--skip-fe
   biggest cluster). Bonfire rate-limits by IP across all tenants, so `bonfire.py` backs off on
   HTTP 429 (process-wide cooldown). Ported from the sibling `rfp-monitor-mvp` tool; widen via its
   Common-Crawl discovery pass. Core-territory (MO/OK/KS/NE) Bonfire presence is thin.
+- **National coverage scorecard** (`--coverage`, `coverage.py`) — the tool's GOAL is nationwide
+  (50-state) coverage; this is the meta-tool that measures it. Reconciles configured education
+  sources (sources.yaml) with document evidence (DB) -> per-state status missing/configured/
+  represented/covered + a CSV. Baseline at build time: 17/50 configured, 4/50 represented.
+  ("represented" is doc-based; add per-source poll-health tracking later to distinguish
+  "working, no match yet" from "never polled".)
 - **USAspending federal grants** — keyless nationwide API; pulls Dept-of-Ed student-success
-  grants (Title III/V, TRIO, GEAR UP) to colleges. Covers core territory (MO/OK/KS/NE) where
-  board minutes are thin. `doc_type='federal_award'`; feeds Opportunities + the Ops play.
+  grants (Title III/V, TRIO, GEAR UP) to colleges. Nationwide `doc_type='federal_award'`; feeds
+  Opportunities + the Ops play. (Federal is nationwide but doesn't count as *state education* coverage.)
 - **Spend normalization** — closed-world `payments` table + `normalize.py`: resolves a raw
   vendor against a KNOWN set (competitors from keywords.yaml + client + institutions), so
   `SEATS SOFTWARE LIMITED` -> SEAtS but `VIVID SEATS` is dropped. `--ingest-spend` pulls live

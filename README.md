@@ -88,6 +88,7 @@ latest run):
 ```bash
 python main.py --search "attendance software"     # full-text search everything ever scraped
 python main.py --opportunities                    # ranked feed, scored by recency + keyword strength
+python main.py --coverage                         # national 50-state coverage scorecard + reports/coverage_<ts>.csv
 python main.py --expirations 90                   # contracts expiring within 90 days (default 180)
 ```
 
