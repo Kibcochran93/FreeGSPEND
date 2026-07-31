@@ -40,7 +40,12 @@ pytest                            # 85 tests, offline
 Scrape filters: `--from/--to`, `--only-keyword`, `--only-competitor`, `--skip-federal`, `--browser`.
 
 ## What works
-- **Board minutes** (AR/TN/TX/CA) — reliable lead source. **Bids/RFPs** on native-HTML boards.
+- **Board minutes** (AR/TN/TX/CA) — reliable lead source. **Bids/RFPs** on native-HTML boards,
+  plus **Bonfire** portals via their public JSON endpoint (`bonfire.py`, source `type: bonfire`;
+  no browser). **24 verified-live higher-ed portals across 12 states wired** (TX/UT-System is the
+  biggest cluster). Bonfire rate-limits by IP across all tenants, so `bonfire.py` backs off on
+  HTTP 429 (process-wide cooldown). Ported from the sibling `rfp-monitor-mvp` tool; widen via its
+  Common-Crawl discovery pass. Core-territory (MO/OK/KS/NE) Bonfire presence is thin.
 - **USAspending federal grants** — keyless nationwide API; pulls Dept-of-Ed student-success
   grants (Title III/V, TRIO, GEAR UP) to colleges. Covers core territory (MO/OK/KS/NE) where
   board minutes are thin. `doc_type='federal_award'`; feeds Opportunities + the Ops play.

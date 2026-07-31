@@ -19,7 +19,14 @@ _DATE_PATTERN = re.compile(r"\b\d{1,2}/\d{1,2}/\d{2,4}\b")
 
 
 def scrape_bid_board(source: dict, session, seen: set[str], matchers) -> tuple[list[dict], list[dict]]:
-    """Returns (new_matches, skipped) for one bid_board source dict from sources.yaml."""
+    """Returns (new_matches, skipped) for one bid_board source dict from sources.yaml.
+
+    Dispatches on `type`: a `bonfire` source is a JSON-API portal handled by the
+    bonfire adapter; everything else is scraped as server-rendered HTML here."""
+    if source.get("type") == "bonfire":
+        from . import bonfire
+        return bonfire.scrape_bonfire_portal(source, session, seen, matchers)
+
     url = source["url"]
     new_matches: list[dict] = []
 

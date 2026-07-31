@@ -61,10 +61,29 @@ texas:
         - url: "https://www.utsystem.edu/offices/collaborative-business-services/supply-chain-alliance/bid-opportunities"
           type: js_rendered
           notes: "Routes to Jaggaer/SciQuest (bids.sciquest.com), SPA, empty on fetch."
+        - {name: "UT System Bonfire", type: bonfire, slug: utsystem, url: "https://utsystem.bonfirehub.com/portal/?tab=openOpportunities"}
       board_minutes:
         - url: "https://www.utsystem.edu/board-of-regents/meetings/meetings-archive/2020-present"
           type: html_table
           notes: "Verified. Agenda Book + Minutes PDF + webcast links, back to 2021+."
+    # Bonfire RFP portals (type: bonfire; public JSON, no browser) - verified live 2026-07-31.
+    # UT-System Bonfire footprint is large; the UT-System-office portal is on the entry above.
+    - name: "University of Texas at Austin"
+      bid_boards: [{type: bonfire, slug: utexas, url: "https://utexas.bonfirehub.com/portal/?tab=openOpportunities"}]
+    - name: "University of Texas at Dallas"
+      bid_boards: [{type: bonfire, slug: utdallas, url: "https://utdallas.bonfirehub.com/portal/?tab=openOpportunities"}]
+    - name: "University of Texas Rio Grande Valley"
+      bid_boards: [{type: bonfire, slug: utrgv, url: "https://utrgv.bonfirehub.com/portal/?tab=openOpportunities"}]
+    - name: "University of Texas at Tyler"
+      bid_boards: [{type: bonfire, slug: uttyler, url: "https://uttyler.bonfirehub.com/portal/?tab=openOpportunities"}]
+    - name: "UT Health San Antonio"
+      bid_boards: [{type: bonfire, slug: uthscsa, url: "https://uthscsa.bonfirehub.com/portal/?tab=openOpportunities"}]
+    - name: "El Paso Community College"
+      bid_boards: [{type: bonfire, slug: epcc, url: "https://epcc.bonfirehub.com/portal/?tab=openOpportunities"}]
+    - name: "Tarrant County College District"
+      bid_boards: [{type: bonfire, slug: tccd, url: "https://tccd.bonfirehub.com/portal/?tab=openOpportunities"}]
+    - name: "Texas Southmost College"
+      bid_boards: [{type: bonfire, slug: tsc, url: "https://tsc.bonfirehub.com/portal/?tab=openOpportunities"}]
   transparency:
     - name: "Texas Comptroller Transparency Dashboards"
       url: "https://comptroller.texas.gov/transparency/open-data/dashboards.php"
@@ -83,6 +102,13 @@ florida:
         - url: "https://trustees.ufl.edu/meetings/"
           type: html_table
           notes: "Verified. Static year-by-year tables, Agenda/Minutes PDFs, 2023-2026 confirmed."
+    # Bonfire RFP portals (type: bonfire; public JSON, no browser) - verified live 2026-07-31.
+    - name: "Florida Atlantic University"
+      bid_boards: [{type: bonfire, slug: fau, url: "https://fau.bonfirehub.com/portal/?tab=openOpportunities"}]
+    - name: "Florida Gulf Coast University"
+      bid_boards: [{type: bonfire, slug: fgcu, url: "https://fgcu.bonfirehub.com/portal/?tab=openOpportunities"}]
+    - name: "University of Central Florida"
+      bid_boards: [{type: bonfire, slug: ucfprocurement, url: "https://ucfprocurement.bonfirehub.com/portal/?tab=openOpportunities"}]
   transparency:
     - name: "Florida Vendor/Payee Payment Search"
       url: "https://fs.fldfs.com/dispub2/cvphsrch.htm"
@@ -101,6 +127,9 @@ california:
         - url: "https://regents.universityofcalifornia.edu/minutes-index/"
           type: html_list
           notes: "Verified. Static listing by year/committee, PDF links, archive to 2000."
+    # Bonfire RFP portal (type: bonfire; public JSON, no browser) - verified live 2026-07-31.
+    - name: "Los Angeles Community College District"
+      bid_boards: [{type: bonfire, slug: laccd, url: "https://laccd.bonfirehub.com/portal/?tab=openOpportunities"}]
   transparency:
     - name: "California FI$Cal Open Data"
       url: "https://open.fiscal.ca.gov/"
@@ -155,6 +184,11 @@ north_carolina:
         - url: "https://www.northcarolina.edu/apps/bog/index.php?mode=all"
           type: html_table
           notes: "Verified. Chronological table, Materials/Minutes links back to 2016 (older = public-records request)."
+    # Bonfire RFP portals (type: bonfire; public JSON, no browser) - verified live 2026-07-31.
+    - name: "North Carolina State University"
+      bid_boards: [{type: bonfire, slug: ncsu, url: "https://ncsu.bonfirehub.com/portal/?tab=openOpportunities"}]
+    - name: "University of North Carolina School of the Arts"
+      bid_boards: [{type: bonfire, slug: uncsa, url: "https://uncsa.bonfirehub.com/portal/?tab=openOpportunities"}]
   transparency:
     - name: "NC Open Budget"
       url: "https://www.nc.gov/government/open-budget"
@@ -194,6 +228,9 @@ illinois:
         - url: "https://trustees.uillinois.edu/trustees/minutes/{YEAR}/{Month}-{DD}-{YYYY}-BOT.pdf"
           type: pdf_list
           notes: "Direct legacy PDF URL PATTERN (not a listing page) - confirmed one real ~130,000-char doc this way. Combine with the static schedule page (bot.uillinois.edu/board_meetings/schedule) to get real dates to fill into the pattern. No clean enumerable index exists."
+    # Bonfire RFP portal (type: bonfire; public JSON, no browser) - verified live 2026-07-31.
+    - name: "City Colleges of Chicago"
+      bid_boards: [{type: bonfire, slug: ccc, url: "https://ccc.bonfirehub.com/portal/?tab=openOpportunities"}]
   transparency:
     - name: "Illinois Comptroller - Statewide Expenditures"
       url: "https://illinoiscomptroller.gov/financial-reports-data/expenditures-state-spending/statewide"
@@ -306,7 +343,10 @@ new_york:
 # not SEAtS buyers. Datasets verified live; columns not yet mapped (no
 # vendor_col => --ingest-spend skips them until wired). See docs/SPENDING_SOURCES.md.
 new_jersey:
-  university_systems: []
+  university_systems:
+    # Bonfire RFP portal (type: bonfire; public JSON, no browser) - verified live 2026-07-31.
+    - name: "Atlantic Cape Community College"
+      bid_boards: [{type: bonfire, slug: atlanticcape, url: "https://atlanticcape.bonfirehub.com/portal/?tab=openOpportunities"}]
   transparency:
     - {name: "NJ Transparency Center", url: "https://data.nj.gov/d/apet-rp2i", type: socrata,
        domain: data.nj.gov, dataset: apet-rp2i, higher_ed_in_scope: false,
@@ -331,7 +371,19 @@ vermont:
 # III/V, TRIO, GEAR UP) to colleges in each state. No university_systems here,
 # so only the federal pass runs. Add more states by copying a block.
 missouri:
-  university_systems: []
+  university_systems:
+    - name: "St. Louis Community College"
+      domain: "stlcc.edu"
+      bid_boards:
+        # Public Bonfire RFP portal - JSON endpoint, no browser needed (type: bonfire).
+        # Verified live 2026-07-31. Most flagship MO/OK/KS/NE schools are NOT on
+        # Bonfire; expand this list as more core-territory portals are verified
+        # (rfp-monitor's discovery pass enumerates bonfirehub tenants via Common Crawl).
+        - name: "STLCC Bonfire portal"
+          type: bonfire
+          slug: stlcc
+          url: "https://stlcc.bonfirehub.com/portal/?tab=openOpportunities"
+          notes: "Open opportunities via the public getOpenPublicOpportunitiesSectionData JSON."
   federal_grants:
     - name: "USAspending federal student-success grants (MO)"
       type: usaspending
@@ -362,3 +414,35 @@ nebraska:
     - name: "USAspending federal student-success grants (NE)"
       type: usaspending
       state: NE
+
+# --- National Bonfire RFP coverage (verified-live higher-ed portals) --------
+# States wired purely for their public Bonfire RFP portals (type: bonfire; JSON
+# endpoint, no browser). No board-minutes/spending/federal here yet - add those
+# blocks later if useful. All slugs verified live 2026-07-31. Bonfire rate-limits
+# by IP across all tenants, so bonfire.py backs off on HTTP 429 (see that module).
+alaska:
+  university_systems:
+    - name: "University of Alaska System"
+      bid_boards: [{type: bonfire, slug: ua, url: "https://ua.bonfirehub.com/portal/?tab=openOpportunities"}]
+
+arizona:
+  university_systems:
+    - name: "Maricopa County Community College District"
+      bid_boards: [{type: bonfire, slug: maricopa, url: "https://maricopa.bonfirehub.com/portal/?tab=openOpportunities"}]
+    - name: "Northland Pioneer College"
+      bid_boards: [{type: bonfire, slug: npc, url: "https://npc.bonfirehub.com/portal/?tab=openOpportunities"}]
+
+new_mexico:
+  university_systems:
+    - name: "New Mexico Military Institute"
+      bid_boards: [{type: bonfire, slug: nmmi, url: "https://nmmi.bonfirehub.com/portal/?tab=openOpportunities"}]
+
+virginia:
+  university_systems:
+    - name: "Norfolk State University"
+      bid_boards: [{type: bonfire, slug: nsu, url: "https://nsu.bonfirehub.com/portal/?tab=openOpportunities"}]
+
+west_virginia:
+  university_systems:
+    - name: "Marshall University"
+      bid_boards: [{type: bonfire, slug: marshall, url: "https://marshall.bonfirehub.com/portal/?tab=openOpportunities"}]

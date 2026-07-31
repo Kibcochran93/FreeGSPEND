@@ -9,7 +9,7 @@ machine, on whatever schedule you want. No subscription, no vendor lock-in
 
 | GovSpend module         | Here                                                              | Cost              |
 | ------------------------ | ------------------------------------------------------------------ | ----------------- |
-| Bids & RFPs               | `bid_scraper.py` - scrapes native HTML bid boards                  | Free              |
+| Bids & RFPs               | `bid_scraper.py` - native HTML bid boards; `bonfire.py` - Bonfire portals via their public JSON endpoint (no browser) | Free              |
 | Meeting Intelligence      | `board_minutes_scraper.py` - downloads + keyword-searches minutes  | Free              |
 | Spending & POs            | `transparency_scraper.py` - best-effort CSV/PDF downloads          | Free              |
 | Co-Ops & Contracts        | `contracts_scraper.py` - detects vendor/start/end date columns, flags expirations | Free |
@@ -261,6 +261,20 @@ postings through a JavaScript single-page app (Jaggaer/SciQuest or GEP
 SMART) - a basic HTTP fetch gets an empty shell, no HTML table to parse.
 These are marked `js_rendered` and skipped on purpose, showing up in your
 report as `SKIPPED:bids / needs_browser`.
+
+**One class of "JS" bid board is reachable without a browser: Bonfire**
+(`*.bonfirehub.com`). The portal page looks JS-rendered, but it fetches its
+open opportunities from a public JSON endpoint - so `bonfire.py` (source
+`type: bonfire`, with a `slug`) pulls them with a plain request, filtered to
+the same SEAtS bid categories as every other bid source. **24 verified-live
+higher-ed Bonfire portals across 12 states are wired** - Texas is the big one
+(the UT System plus El Paso / Tarrant County / Texas Southmost), alongside FL,
+NC, AZ, CA, IL, MO, NJ, NM, VA, WV, and AK. Note most MO/OK/KS/NE flagships are
+*not* on Bonfire (they use other platforms), so core-territory yield is thin;
+the volume is in TX/FL/NC. Bonfire rate-limits by IP across *all* tenants, so
+`bonfire.py` backs off on HTTP 429 with a process-wide cooldown (skipped portals
+retry next run). Widen coverage with rfp-monitor's Common-Crawl discovery pass,
+which enumerates bonfirehub tenants nationwide.
 
 **Transparency portals split roughly in half.** California (FI$Cal),
 Georgia (open.ga.gov), and North Carolina's bulk-download CSVs are

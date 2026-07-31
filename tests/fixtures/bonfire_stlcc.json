@@ -1,0 +1,29 @@
+{
+  "success": 1,
+  "message": "Success",
+  "payload": {
+    "projects": {
+      "246813": {
+        "ProjectID": "246813",
+        "PrivateProjectID": "e0ba6eacae1d6bdd7ab6b3332096b533",
+        "ReferenceID": "B27RFP0011",
+        "ProjectStatusID": "2",
+        "ProjectVisibilityID": "1",
+        "ProjectName": "Student Early Alert and Retention Platform",
+        "DateClose": "2026-08-21 22:00:00",
+        "DepartmentID": "3472"
+      },
+      "239918": {
+        "ProjectID": "239918",
+        "PrivateProjectID": "cadbf58ae79b82d5e293d04c4a2eacd7",
+        "ReferenceID": "B26RFP0009",
+        "ProjectStatusID": "2",
+        "ProjectVisibilityID": "1",
+        "ProjectName": "Parking Lot Resurfacing District-wide",
+        "DateClose": "2026-08-31 22:00:00",
+        "DepartmentID": "3472"
+      }
+    },
+    "departments": []
+  }
+}
