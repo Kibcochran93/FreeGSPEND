@@ -28,7 +28,7 @@ from __future__ import annotations
 import json
 import re
 import time
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 
 import requests
 
@@ -246,13 +246,13 @@ def _date_only(value: str) -> str:
         return ""
     dotnet = re.search(r"/Date\((\d+)(?:[+-]\d+)?\)/", value)
     if dotnet:
-        return datetime.fromtimestamp(int(dotnet.group(1)) / 1000, tz=UTC).date().isoformat()
+        return datetime.fromtimestamp(int(dotnet.group(1)) / 1000, tz=timezone.utc).date().isoformat()
     if value.isdigit():
         stamp = int(value)
         if stamp > 10_000_000_000:   # milliseconds
             stamp /= 1000
         try:
-            return datetime.fromtimestamp(stamp, tz=UTC).date().isoformat()
+            return datetime.fromtimestamp(stamp, tz=timezone.utc).date().isoformat()
         except (OverflowError, OSError, ValueError):
             return ""
     candidate = value.replace("Z", "+00:00")
