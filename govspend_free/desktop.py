@@ -241,6 +241,77 @@ class Api:
             pkg_logger.removeHandler(handler)
             self._scraping = False
 
+    # --------------------------- settings + auto-update ---------------------------
+
+    def _settings_path(self):
+        return utils.STATE_DIR / "ui_settings.json"
+
+    def _read_settings(self) -> dict:
+        p = self._settings_path()
+        if p.exists():
+            try:
+                return json.loads(p.read_text(encoding="utf-8")) or {}
+            except (json.JSONDecodeError, OSError):
+                return {}
+        return {}
+
+    def _write_settings(self, data: dict) -> None:
+        try:
+            self._settings_path().write_text(json.dumps(data, indent=2), encoding="utf-8")
+        except OSError as exc:
+            log.warning("could not save UI settings: %s", exc)
+
+    def get_settings(self) -> dict:
+        s = self._read_settings()
+        return {"auto_update": s.get("auto_update", "off"),
+                "last_auto_update": s.get("last_auto_update", "")}
+
+    def set_auto_update(self, mode: str = "off") -> dict:
+        mode = mode if mode in ("off", "daily", "weekly") else "off"
+        s = self._read_settings()
+        s["auto_update"] = mode
+        self._write_settings(s)
+        log.info("Automatic updates set to: %s", mode)
+        return {"ok": True, "auto_update": mode}
+
+    def start_scheduler(self) -> None:
+        """Start the background auto-update checker (daemon thread). Runs a full
+        update when the configured schedule is due AND the app is open, so a
+        nontechnical user never has to open the Update tab."""
+        threading.Thread(target=self._scheduler_loop, daemon=True).start()
+
+    def _scheduler_loop(self) -> None:
+        import time as _time
+        _time.sleep(25)  # let the window finish loading before the first check
+        while True:
+            try:
+                self._maybe_auto_update()
+            except Exception as exc:  # a bad check must never kill the loop
+                log.warning("auto-update check failed: %s", exc)
+            _time.sleep(1800)  # re-check every 30 min while the app is open
+
+    def _maybe_auto_update(self) -> None:
+        import datetime as _dt
+        s = self._read_settings()
+        mode = s.get("auto_update", "off")
+        if mode not in ("daily", "weekly") or self._scraping:
+            return
+        interval = 86400 if mode == "daily" else 604800
+        last = s.get("last_auto_update")
+        if last:
+            try:
+                if (_dt.datetime.now() - _dt.datetime.fromisoformat(last)).total_seconds() < interval:
+                    return
+            except ValueError:
+                pass
+        log.info("Automatic update starting (%s schedule)...", mode)
+        self._scraping = True
+        self._scrape_worker({})   # runs synchronously here; clears self._scraping in its finally
+        s = self._read_settings()
+        s["auto_update"] = mode
+        s["last_auto_update"] = _dt.datetime.now().isoformat(timespec="seconds")
+        self._write_settings(s)
+
     # --------------------------- account brief ---------------------------
 
     def start_brief(self, target: str) -> dict:
@@ -340,13 +411,65 @@ class _WebviewLogHandler(logging.Handler):
             pass  # window may be closing; never let logging raise
 
 
+def _app_icon():
+    """Generate (once) and return the app-icon PNG path, or None on any failure.
+    Pure-stdlib PNG writer - a rounded blue tile with white 'bar chart' bars - so
+    there's no image-library dependency."""
+    try:
+        import struct
+        import zlib
+        icon = utils.STATE_DIR / "app_icon.png"
+        if icon.exists():
+            return icon
+        W = H = 64
+        BG, WH, AC, TR = (37, 99, 235, 255), (255, 255, 255, 255), (147, 197, 253, 255), (0, 0, 0, 0)
+        m, r = 4, 13
+        bars = ((17, 40), (28, 30), (39, 22))   # (x_start, top_y); 8px wide, bottom y=50
+
+        def inside(x, y):
+            x0, y0, x1, y1 = m, m, W - 1 - m, H - 1 - m
+            if x < x0 or x > x1 or y < y0 or y > y1:
+                return False
+            for cx, cy, tx, ty in ((x0 + r, y0 + r, x < x0 + r, y < y0 + r),
+                                   (x1 - r, y0 + r, x > x1 - r, y < y0 + r),
+                                   (x0 + r, y1 - r, x < x0 + r, y > y1 - r),
+                                   (x1 - r, y1 - r, x > x1 - r, y > y1 - r)):
+                if tx and ty:
+                    return (x - cx) ** 2 + (y - cy) ** 2 <= r * r
+            return True
+
+        raw = bytearray()
+        for y in range(H):
+            raw.append(0)   # PNG filter type 0
+            for x in range(W):
+                if not inside(x, y):
+                    raw += bytes(TR)
+                elif any(bx <= x < bx + 8 and top <= y <= 50 for bx, top in bars):
+                    raw += bytes(WH)
+                elif (x - 44) ** 2 + (y - 17) ** 2 <= 16:
+                    raw += bytes(AC)
+                else:
+                    raw += bytes(BG)
+
+        def chunk(typ, data):
+            return (struct.pack(">I", len(data)) + typ + data
+                    + struct.pack(">I", zlib.crc32(typ + data) & 0xffffffff))
+        icon.write_bytes(b"\x89PNG\r\n\x1a\n"
+                         + chunk(b"IHDR", struct.pack(">IIBBBBB", W, H, 8, 6, 0, 0, 0))
+                         + chunk(b"IDAT", zlib.compress(bytes(raw), 9))
+                         + chunk(b"IEND", b""))
+        return icon
+    except Exception:
+        return None
+
+
 def main() -> None:
     utils.setup_logging()
     import webview  # lazy: only needed to actually open the window
 
     api = Api()
     window = webview.create_window(
-        "GovSpend Free",
+        "GovSpend Free - Procurement Dashboard",
         html=HTML,
         js_api=api,
         width=1120,
@@ -354,7 +477,12 @@ def main() -> None:
         min_size=(860, 620),
     )
     api.set_window(window)
-    webview.start()
+    api.start_scheduler()          # background auto-updates (no-op unless enabled)
+    icon = _app_icon()
+    try:
+        webview.start(icon=str(icon)) if icon else webview.start()
+    except TypeError:
+        webview.start()            # older pywebview without an icon kwarg
 
 
 # --------------------------------------------------------------------------
@@ -391,6 +519,11 @@ HTML = r"""
     font-size: 13px; color: var(--muted); border-radius: 8px 8px 0 0; font-weight: 550;
   }
   .tab.active { background: var(--panel); color: var(--fg); box-shadow: 0 -1px 0 var(--line); }
+  .tab svg.tico { width: 15px; height: 15px; vertical-align: -2.5px; margin-right: 6px; }
+  header .logo { display: inline-flex; align-items: center; }
+  .stat-card .k svg.cico { width: 15px; height: 15px; margin-right: 6px; color: var(--muted); }
+  .rag-green .cico { color: #16a34a; } .rag-amber .cico { color: #d97706; }
+  .rag-red .cico { color: #dc2626; } .rag-gray .cico { color: var(--muted); }
   main { padding: 16px 20px 28px; }
   .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; }
   .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
@@ -485,6 +618,13 @@ HTML = r"""
 </head>
 <body>
   <header>
+    <span class="logo" aria-hidden="true"><svg width="26" height="26" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="1" y="1" width="24" height="24" rx="6" fill="#2563eb"/>
+      <rect x="5.6" y="13" width="3.2" height="7" rx="1" fill="#fff"/>
+      <rect x="11.4" y="9" width="3.2" height="11" rx="1" fill="#fff"/>
+      <rect x="17.2" y="6" width="3.2" height="14" rx="1" fill="#fff"/>
+      <circle cx="19" cy="7" r="2.4" fill="#93c5fd"/>
+    </svg></span>
     <h1>GovSpend&nbsp;Free</h1>
     <span class="sub">local procurement dashboard</span>
     <span class="spacer"></span>
@@ -587,16 +727,14 @@ HTML = r"""
     <section id="tab-ops" class="tabpane hidden">
       <div class="panel">
         <div class="row">
-          <strong>Full Motion</strong>
-          <span class="chip" style="background:#fef3c7;color:#92400e">FLAGSHIP</span>
+          <strong>Account priorities</strong>
           <span class="spacer" style="flex:1"></span>
-          <button class="primary" id="playBtn" onclick="runPlay()">Run Full Motion play</button>
+          <button class="primary" id="playBtn" onclick="runPlay()">Rank my accounts</button>
         </div>
-        <p class="hint">
-          The entire prospecting motion in one run: scores every account with a
-          signal 0&ndash;100, checks CRM status, pulls the decision-maker, and drafts a
-          spend-grounded opener. CRM data is read <strong>read-only</strong> via a HubSpot
-          Private App token (config/hubspot.yaml) &mdash; nothing is written back.
+        <p class="tabhelp">
+          A ranked list of who to focus on this week: every account is scored 0&ndash;100 from its
+          buying signals, matched to your CRM status, with the decision-maker and a
+          ready-to-personalize opener. Your CRM is read <strong>read-only</strong> &mdash; nothing is ever written back.
         </p>
         <div id="opsGate" class="status"></div>
         <div id="playStatus" class="status"></div>
@@ -617,6 +755,17 @@ HTML = r"""
       <div class="panel">
         <strong>Update your data</strong>
         <p class="tabhelp">Collect the latest bids, board minutes, spending, and federal opportunities from the public sources. This can take a few minutes &mdash; progress shows below.</p>
+        <div class="callout" style="display:flex; align-items:center; gap:10px; flex-wrap:wrap">
+          <svg style="color:var(--accent); width:18px; height:18px; flex:none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.7-6.4"/><path d="M21 4v5h-5"/></svg>
+          <label class="chk"><strong>Keep my data fresh automatically</strong>
+            <select id="autoUpdate" onchange="setAutoUpdate()" style="margin-left:8px">
+              <option value="off">Off</option>
+              <option value="daily">Every day</option>
+              <option value="weekly">Every week</option>
+            </select>
+          </label>
+          <span class="hint" id="autoNote" style="flex:1; min-width:240px"></span>
+        </div>
         <div class="row">
           <label class="chk">States:
             <select id="state"><option value="">All states</option></select>
@@ -687,6 +836,31 @@ HTML = r"""
   const el = (id) => document.getElementById(id);
   const TYPE_LABELS = { bid: 'Bid/RFP', board_minutes: 'Board minutes', transparency: 'Spending', federal_award: 'Federal grant', federal_rfp: 'Federal RFP' };
   const typeLabel = (t) => TYPE_LABELS[t] || t;
+
+  // Light inline iconography (Feather-style strokes, inherit currentColor).
+  const ICONS = {
+    home: '<path d="M3 11l9-8 9 8"/><path d="M5 10v10h5v-6h4v6h5V10"/>',
+    list: '<path d="M8 6h12M8 12h12M8 18h12"/><path d="M4 6h.01M4 12h.01M4 18h.01"/>',
+    search: '<circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/>',
+    clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+    star: '<path d="M12 3l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9 6.8 19.2l1-5.8-4.3-4.1 5.9-.9z"/>',
+    refresh: '<path d="M21 12a9 9 0 1 1-2.7-6.4"/><path d="M21 4v5h-5"/>',
+    doc: '<path d="M7 3h7l4 4v14H7z"/><path d="M14 3v4h4"/>',
+    alert: '<path d="M12 4l9 16H3z"/><path d="M12 10v4"/><path d="M12 17h.01"/>',
+    users: '<circle cx="9" cy="8" r="3"/><path d="M3.5 20c0-3 2.7-5 5.5-5s5.5 2 5.5 5"/><path d="M16 5.5a3 3 0 0 1 0 5.5"/>',
+  };
+  function icon(name, cls) {
+    return '<svg class="' + (cls || '') + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
+      'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + (ICONS[name] || ICONS.doc) + '</svg>';
+  }
+  const TAB_ICONS = { home: 'home', opps: 'list', search: 'search', exp: 'clock', ops: 'star', scrape: 'refresh' };
+  const CARD_ICONS = { 'Data freshness': 'clock', 'Documents': 'doc', 'Opportunities': 'list', 'Expirations': 'alert', 'Competitor footprint': 'users' };
+  function paintTabIcons() {
+    document.querySelectorAll('.tab').forEach(t => {
+      const n = TAB_ICONS[t.dataset.tab];
+      if (n && !t.querySelector('svg')) t.insertAdjacentHTML('afterbegin', icon(n, 'tico'));
+    });
+  }
 
   // ---- tab switching ----
   document.querySelectorAll('.tab').forEach(t => t.onclick = () => {
@@ -860,7 +1034,7 @@ HTML = r"""
       const card = document.createElement('div');
       card.className = 'stat-card rag-' + (c.rag || 'gray');
       const k = document.createElement('div'); k.className = 'k';
-      const dot = document.createElement('span'); dot.className = 'dot'; k.appendChild(dot);
+      k.innerHTML = icon(CARD_ICONS[c.label] || 'doc', 'cico');
       k.appendChild(document.createTextNode(c.label));
       const v = document.createElement('div'); v.className = 'v'; v.textContent = c.value;
       const s = document.createElement('div'); s.className = 's'; s.textContent = c.sub || '';
@@ -1002,8 +1176,13 @@ HTML = r"""
       el('playBtn').disabled = false;
     } else {
       gate.className = 'status';
-      gate.innerHTML = '<div class="gate-warn"><strong>HubSpot read access not configured.</strong><br>' +
-        String(st.reason).replace(/</g, '&lt;') + '</div>';
+      gate.innerHTML = '<div class="gate-warn"><strong>One-time setup needed to turn this on.</strong><br>' +
+        'Account Priorities reads your CRM to rank accounts. It needs a one-time, ' +
+        '<strong>read-only</strong> connection to HubSpot &mdash; nothing is ever written back. ' +
+        'Once it\'s connected, this button switches on automatically. ' +
+        'Ask whoever set up the tool, or open <em>Update Data &rarr; Advanced &rarr; Check setup</em> for the steps.' +
+        '<details style="margin-top:8px"><summary class="hint" style="cursor:pointer">Technical details</summary>' +
+        '<span class="hint">' + String(st.reason).replace(/</g, '&lt;') + '</span></details></div>';
       el('playBtn').disabled = true;
     }
   }
@@ -1156,10 +1335,36 @@ HTML = r"""
   }
 
   // ---- init ----
+  // ---- automatic updates ----
+  async function loadSettings() {
+    try {
+      const s = await api().get_settings();
+      if (el('autoUpdate')) el('autoUpdate').value = s.auto_update || 'off';
+      updateAutoNote(s);
+    } catch (e) {}
+  }
+  async function setAutoUpdate() {
+    const mode = el('autoUpdate').value;
+    try { await api().set_auto_update(mode); } catch (e) {}
+    updateAutoNote({ auto_update: mode });
+  }
+  function updateAutoNote(s) {
+    const n = el('autoNote'); if (!n) return;
+    if (s.auto_update && s.auto_update !== 'off') {
+      const every = s.auto_update === 'daily' ? 'day' : 'week';
+      const last = s.last_auto_update ? (' Last automatic update: ' + String(s.last_auto_update).replace('T', ' ') + '.') : '';
+      n.textContent = 'On — updates about once a ' + every + ', in the background whenever the app is open.' + last;
+    } else {
+      n.textContent = 'Off — turn this on and you never have to click Update yourself.';
+    }
+  }
+
   async function init() {
+    paintTabIcons();
     const states = await api().list_states();
     const sel = el('state');
     states.forEach(s => { const o = document.createElement('option'); o.value = s; o.textContent = s; sel.appendChild(o); });
+    loadSettings();
     loadHome();
   }
   window.addEventListener('pywebviewready', init);
