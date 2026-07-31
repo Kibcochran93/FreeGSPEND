@@ -163,6 +163,10 @@ georgia:
         - url: "https://www.usg.edu/regents/meetings/"
           type: html_table
           notes: "Verified. Year-by-year archive, Date/Location/Agenda/Minutes columns, PDFs back to 1996."
+    # Statewide SciQuest marketplace parses via requests (type: jaggaer) - unlike the
+    # per-university UGA SPA above. Verified live 2026-07-31 (20 events). GA's is DOT-heavy.
+    - name: "State of Georgia Marketplace (statewide SciQuest)"
+      bid_boards: [{type: jaggaer, url: "https://bids.sciquest.com/apps/Router/PublicEvent?CustomerOrg=Georgia"}]
   transparency:
     - name: "Open Georgia"
       url: "https://open.ga.gov/"
@@ -470,3 +474,11 @@ iowa:
   university_systems:
     - name: "Iowa State University"
       bid_boards: [{type: ionwave, slug: iastate, url: "https://iastate.ionwave.net/SourcingEvents.aspx?SourceType=1"}]
+
+# State of Montana eMACS - a statewide SciQuest/JAGGAER marketplace that INCLUDES
+# the public universities (MSU, Great Falls College...) and parses via requests
+# (type: jaggaer). Verified live 2026-07-31 (20 events; matched a K-12 accreditation RFP).
+montana:
+  university_systems:
+    - name: "State of Montana eMACS (incl. public universities)"
+      bid_boards: [{type: jaggaer, url: "https://bids.sciquest.com/apps/Router/PublicEvent?CustomerOrg=StateOfMontana"}]

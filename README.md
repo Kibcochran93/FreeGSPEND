@@ -9,7 +9,7 @@ machine, on whatever schedule you want. No subscription, no vendor lock-in
 
 | GovSpend module         | Here                                                              | Cost              |
 | ------------------------ | ------------------------------------------------------------------ | ----------------- |
-| Bids & RFPs               | `bid_scraper.py` - native HTML bid boards; `bonfire.py` - Bonfire JSON portals; `ionwave.py` - Ion Wave RadGrid portals (all browser-free) | Free              |
+| Bids & RFPs               | `bid_scraper.py` native HTML; `bonfire.py` Bonfire JSON; `ionwave.py` Ion Wave RadGrid; `jaggaer.py` SciQuest marketplaces (all browser-free) | Free              |
 | Meeting Intelligence      | `board_minutes_scraper.py` - downloads + keyword-searches minutes  | Free              |
 | Spending & POs            | `transparency_scraper.py` - best-effort CSV/PDF downloads          | Free              |
 | Co-Ops & Contracts        | `contracts_scraper.py` - detects vendor/start/end date columns, flags expirations | Free |
@@ -284,8 +284,12 @@ in its config entry).
 Arkansas.** Texas, Florida, California, and Georgia all route real bid
 postings through a JavaScript single-page app (Jaggaer/SciQuest or GEP
 SMART) - a basic HTTP fetch gets an empty shell, no HTML table to parse.
-These are marked `js_rendered` and skipped on purpose, showing up in your
-report as `SKIPPED:bids / needs_browser`.
+These per-university SPA entry points are marked `js_rendered` and skipped on
+purpose, showing up in your report as `SKIPPED:bids / needs_browser`. **But the
+statewide SciQuest marketplaces DO parse without a browser** - `jaggaer.py`
+(source `type: jaggaer`) reads `bids.sciquest.com/apps/Router/PublicEvent?CustomerOrg=<Org>`
+as a real HTML event table. State-of-Montana eMACS and State-of-Georgia are wired
+(they include the public universities); these reach schools Bonfire/Ion Wave don't.
 
 **One class of "JS" bid board is reachable without a browser: Bonfire**
 (`*.bonfirehub.com`). The portal page looks JS-rendered, but it fetches its

@@ -53,6 +53,10 @@ Scrape filters: `--from/--to`, `--only-keyword`, `--only-competitor`, `--skip-fe
   higher-ed anchor (verified live), rest are curated K-12 ISDs + Grayson College. Ported from
   the sibling `rfp-monitor-mvp` tool; widen via its
   Common-Crawl discovery pass. Core-territory (MO/OK/KS/NE) Bonfire presence is thin.
+  **JAGGAER/SciQuest** too (`jaggaer.py`, source `type: jaggaer`): the per-university SPA entry
+  points are JS shells, but the **statewide** marketplaces (`bids.sciquest.com/.../PublicEvent?CustomerOrg=`)
+  serve a real HTML event table - MT (State-of-Montana eMACS) + GA wired; they include the public
+  universities and reach schools Bonfire/Ion Wave don't. First adapter to actually STORE a match.
 - **National coverage scorecard** (`--coverage`, `coverage.py`) — the tool's GOAL is nationwide
   (50-state) coverage; this is the meta-tool that measures it. Reconciles configured education
   sources (sources.yaml) with document evidence (DB) -> per-state status missing/configured/
@@ -106,13 +110,14 @@ Scrape filters: `--from/--to`, `--only-keyword`, `--only-competitor`, `--skip-fe
 
 ## Best next step (recommended)
 Goal is **national coverage**. Bonfire (24 higher-ed portals/12 states) + Ion Wave (8/3) are
-wired, and **`--discover` confirmed their higher-ed lever is exhausted** (both platforms are
-K-12-dominant; all identifiable higher-ed is wired). So the real state-count lever is the **next
-platform family: port Jaggaer** (`jaggaer.py` in the sibling `rfp-monitor-mvp`; parses public
-JAGGAER/SciQuest event pages — reaches universities Bonfire/Ion Wave don't), then OpenGov /
-DemandStar / PlanetBids. Same port pattern as Bonfire/Ion Wave (adapt to `utils.fetch` + the
-`documents` bid pipeline, dispatch in `bid_scraper`, offline test). Convert any `datetime.UTC`
-(3.11+) to `timezone.utc` for the 3.10 CI leg. Secondary: Phase-3 spending endpoint-cracking
+wired, `--discover` confirmed their higher-ed lever is exhausted, and **Jaggaer is now ported**
+(MT+GA statewide SciQuest marketplaces). So the next state-count lever is **more platform
+families: OpenGov Procurement, DemandStar, PlanetBids** (rfp-monitor's SOURCE-EXPANSION.md lists
+them) - reach institutions the current three don't. Also: **more Jaggaer statewide orgs** -
+probe other `CustomerOrg=` marketplaces on `bids.sciquest.com` and wire the ones that parse.
+Same port pattern (adapt to `utils.fetch` + the `documents` bid pipeline, dispatch in
+`bid_scraper`, offline test). Convert any `datetime.UTC` (3.11+) to `timezone.utc` for the 3.10
+CI leg. Secondary: Phase-3 spending endpoint-cracking
 (docs/SPENDING_SOURCES.md — OK CKAN is low-yield, see memory), and the closed-app Windows
 Scheduled Task for auto-updates.
 
