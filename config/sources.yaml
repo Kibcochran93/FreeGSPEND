@@ -184,6 +184,42 @@ california:
       bid_boards: [{type: planetbids, url: "https://vendors.planetbids.com/portal/66036/bo/bo-search"}]
     - name: "Santa Monica College"   # found by --discover planetbids (auto-discovery)
       bid_boards: [{type: planetbids, url: "https://vendors.planetbids.com/portal/13721/bo/bo-search"}]
+    # --- Auto-discovered by `--discover planetbids` (Wayback enumerate + render-classify),
+    #     confirmed higher-ed by the institution name. All California PlanetBids portals. ---
+    - name: "California Institute of Technology"
+      bid_boards: [{type: planetbids, url: "https://vendors.planetbids.com/portal/45239/bo/bo-search"}]
+    - name: "California State University, Office of the Chancellor"
+      bid_boards: [{type: planetbids, url: "https://vendors.planetbids.com/portal/15331/bo/bo-search"}]
+    - name: "California State University, Northridge"
+      bid_boards: [{type: planetbids, url: "https://vendors.planetbids.com/portal/15795/bo/bo-search"}]
+    - name: "California State University, Monterey Bay"
+      bid_boards: [{type: planetbids, url: "https://vendors.planetbids.com/portal/26036/bo/bo-search"}]
+    - name: "California State University, San Bernardino"
+      bid_boards: [{type: planetbids, url: "https://vendors.planetbids.com/portal/26038/bo/bo-search"}]
+    - name: "San Diego State University"
+      bid_boards: [{type: planetbids, url: "https://vendors.planetbids.com/portal/25796/bo/bo-search"}]
+    - name: "San Jose State University"
+      bid_boards: [{type: planetbids, url: "https://vendors.planetbids.com/portal/15275/bo/bo-search"}]
+    - name: "Gavilan Joint Community College District"
+      bid_boards: [{type: planetbids, url: "https://vendors.planetbids.com/portal/40920/bo/bo-search"}]
+    - name: "MiraCosta Community College District"
+      bid_boards: [{type: planetbids, url: "https://vendors.planetbids.com/portal/47167/bo/bo-search"}]
+    - name: "Monterey Peninsula College"
+      bid_boards: [{type: planetbids, url: "https://vendors.planetbids.com/portal/53850/bo/bo-search"}]
+    - name: "Mt. San Jacinto Community College District"
+      bid_boards: [{type: planetbids, url: "https://vendors.planetbids.com/portal/50031/bo/bo-search"}]
+    - name: "North Orange County Community College District"
+      bid_boards: [{type: planetbids, url: "https://vendors.planetbids.com/portal/55147/bo/bo-search"}]
+    - name: "Palomar College"
+      bid_boards: [{type: planetbids, url: "https://vendors.planetbids.com/portal/57150/bo/bo-search"}]
+    - name: "San Bernardino Community College District"
+      bid_boards: [{type: planetbids, url: "https://vendors.planetbids.com/portal/29414/bo/bo-search"}]
+    - name: "San Jose Evergreen Community College District"
+      bid_boards: [{type: planetbids, url: "https://vendors.planetbids.com/portal/39502/bo/bo-search"}]
+    - name: "State Center Community College District"
+      bid_boards: [{type: planetbids, url: "https://vendors.planetbids.com/portal/51469/bo/bo-search"}]
+    - name: "West Valley - Mission Community College District"
+      bid_boards: [{type: planetbids, url: "https://vendors.planetbids.com/portal/39476/bo/bo-search"}]
   transparency:
     - name: "California FI$Cal Open Data"
       url: "https://open.fiscal.ca.gov/"
