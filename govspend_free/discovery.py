@@ -31,6 +31,10 @@ from .coverage import US_STATES, state_key
 from .utils import log
 
 CC_COLLINFO = "https://index.commoncrawl.org/collinfo.json"
+# Wayback Machine's CDX index - a second keyless URL index. More reliable than
+# Common Crawl's endpoint (which frequently 504s / is unreachable), so it's the
+# primary enumeration source for the path families.
+WAYBACK_CDX = "http://web.archive.org/cdx/search/cdx"
 
 _HE_RE = re.compile(r"\b(college|university|universities|institute|polytechnic|seminary)\b", re.I)
 _K12_RE = re.compile(r"\b(isd|independent school|school district|public schools|"
@@ -44,6 +48,30 @@ _FAMILIES = {
                 "drop": {"www", "vendor"}},
     "ionwave": {"suffix": ".ionwave.net", "cc_url": "*.ionwave.net/SourcingEvents.aspx*",
                 "drop": {"www", "support", "vendor"}},
+}
+
+# PATH-based platform families: the tenant id lives in the URL PATH (a numeric
+# portal id for PlanetBids, a text slug for OpenGov), not the subdomain. These
+# are JS SPAs, so classification RENDERS each portal (render.browser_session) to
+# read its institution name off the page - slower, but the only way to get the
+# name. Bulk-discovery pays off because enumeration finds hundreds at once.
+_PATH_FAMILIES = {
+    "planetbids": {
+        "cc_url": "vendors.planetbids.com/portal/*",
+        "wb_url": "vendors.planetbids.com/portal*",
+        "id_re": re.compile(r"/portal/(\d+)"),
+        "url": lambda pid: f"https://vendors.planetbids.com/portal/{pid}/bo/bo-search",
+        "type": "planetbids",
+        "stealth": False,
+    },
+    "opengov": {
+        "cc_url": "procurement.opengov.com/portal/*",
+        "wb_url": "procurement.opengov.com/portal*",
+        "id_re": re.compile(r"/portal/([a-z0-9][a-z0-9_-]{1,40})"),
+        "url": lambda slug: f"https://procurement.opengov.com/portal/{slug}",
+        "type": "opengov",
+        "stealth": True,   # Cloudflare-walled -> needs the stealth fetcher
+    },
 }
 
 
@@ -145,8 +173,11 @@ def run(family: str, session=None, seed_slugs: list[str] | None = None,
     sleeps ~1.5s between requests, so a few-hundred-tenant run takes several
     minutes. These platforms still rate-limit bursts by IP - if many come back
     as fetch failures, they're throttled, not dead; re-run a smaller batch."""
+    if family in _PATH_FAMILIES:
+        return run_path_family(family, session, seed_slugs, limit)
     if family not in _FAMILIES:
-        raise ValueError(f"unknown family {family!r}; use one of {sorted(_FAMILIES)}")
+        raise ValueError(f"unknown family {family!r}; use one of "
+                         f"{sorted(list(_FAMILIES) + list(_PATH_FAMILIES))}")
     session = session or utils.get_session()
     slugs, note = enumerate_hosts(family, session)
     if note:
@@ -160,6 +191,127 @@ def run(family: str, session=None, seed_slugs: list[str] | None = None,
         if delay:
             time.sleep(delay)
     return rows
+
+
+def enumerate_path_ids(family: str, session, cc_crawls: int = 1,
+                       wb_limit: int = 40000) -> tuple[list[str], str]:
+    """Enumerate path-based tenant ids/slugs (`.../portal/<id>`) from the Wayback
+    Machine CDX index (primary - reliable, keyless) plus Common Crawl (best-effort
+    supplement; its endpoint frequently 504s / is unreachable). Returns (ids, note)."""
+    fam = _PATH_FAMILIES[family]
+    ids: set[str] = set()
+
+    # 1) Wayback Machine CDX - the reliable source.
+    resp = utils.fetch(WAYBACK_CDX, session=session, timeout=90, params={
+        "url": fam["wb_url"], "output": "json", "fl": "original",
+        "collapse": "urlkey", "limit": wb_limit})
+    if resp is not None:
+        try:
+            rows = resp.json()
+        except ValueError:
+            rows = []
+        for row in rows:
+            url = row[0] if isinstance(row, list) and row else ""
+            if not url or url == "original":
+                continue    # header row / empty
+            m = fam["id_re"].search(url)
+            if m:
+                ids.add(m.group(1))
+
+    # 2) Common Crawl - supplement (union), tolerated when unreachable.
+    cc = utils.fetch(CC_COLLINFO, session=session)
+    if cc is not None:
+        try:
+            collections = cc.json()
+        except ValueError:
+            collections = []
+        for col in collections[:cc_crawls]:
+            r = utils.fetch(f"https://index.commoncrawl.org/{col['id']}-index"
+                            f"?url={fam['cc_url']}&output=json&fl=url&collapse=urlkey",
+                            session=session, timeout=90)
+            if r is None:
+                continue
+            for line in r.text.splitlines():
+                if not line.strip():
+                    continue
+                try:
+                    url = json.loads(line)["url"]
+                except (json.JSONDecodeError, KeyError, TypeError):
+                    continue
+                m = fam["id_re"].search(url)
+                if m:
+                    ids.add(m.group(1))
+
+    note = "" if ids else "no portals found (Wayback CDX + Common Crawl both empty/unreachable)"
+    return sorted(ids), note
+
+
+def _rendered_name(html: str, family: str) -> str:
+    """Institution name read off a rendered portal page."""
+    from bs4 import BeautifulSoup
+    text = re.sub(r"\s+", " ", BeautifulSoup(html or "", "html.parser").get_text(" ")).strip()
+    if family == "planetbids":
+        m = re.search(r"Skip to main content (.+?) (?:Help Center|Home LOG IN|Bid Opportunities)", text)
+        return m.group(1).strip() if m else ""
+    # opengov / generic: the <title>, minus any " | OpenGov"-style suffix.
+    t = re.search(r"<title>([^<]+)</title>", html or "", re.I)
+    return re.sub(r"\s*[|–\-].*$", "", (t.group(1).strip() if t else "")).strip()
+
+
+def classify_rendered(family: str, pid: str, fetch) -> dict:
+    """Render one path-family portal (via a browser_session `fetch`) and classify
+    it: live?, higher-ed vs K-12 vs other, state (best-effort from name), open count."""
+    fam = _PATH_FAMILIES[family]
+    html = fetch(fam["url"](pid))
+    if not html:
+        return {"slug": pid, "live": False, "segment": "dead", "open": 0, "name": "", "state": ""}
+    name = _rendered_name(html, family)
+    open_ct: object = ""
+    if family == "planetbids":
+        from . import planetbids
+        open_ct = len(planetbids.parse_planetbids(html))
+    return {"slug": pid, "live": True, "segment": _segment(name), "open": open_ct,
+            "name": name, "state": state_from_name(name)}
+
+
+def run_path_family(family: str, session=None, seed_ids: list[str] | None = None,
+                    limit: int = 200) -> list[dict]:
+    """Enumerate (Common Crawl) + render-classify a path-based family. Reuses ONE
+    browser across all portals (render.browser_session), so a batch is ~5s/portal."""
+    from . import render
+    fam = _PATH_FAMILIES[family]
+    session = session or utils.get_session()
+    ids, note = enumerate_path_ids(family, session)
+    if note:
+        log.warning("  [discover] %s", note)
+    ids = sorted(set(ids) | set(seed_ids or []), key=lambda x: (len(x), x))[:limit]
+    if not render.scrapling_available():
+        log.warning('  [discover] %s discovery needs the render layer - '
+                    'pip install "scrapling[fetchers]"', family)
+        return []
+    log.info("  [discover] rendering + classifying %d %s portal(s) - slow (~5s each)...",
+             len(ids), family)
+    rows: list[dict] = []
+    with render.browser_session(stealth=fam["stealth"]) as fetch:
+        for pid in ids:
+            rows.append(classify_rendered(family, pid, fetch))
+    return rows
+
+
+def to_sources_entries(rows: list[dict], family: str) -> str:
+    """Ready-to-paste sources.yaml `university_systems` entries for the LIVE,
+    higher-ed candidates. State is best-effort from the name - verify before use."""
+    fam = _PATH_FAMILIES.get(family, {})
+    url_fn = fam.get("url", lambda s: s)
+    typ = fam.get("type", family)
+    lines: list[str] = []
+    for r in sorted(rows, key=lambda r: (r.get("state") or "zz", r.get("name") or "")):
+        if r.get("segment") != "higher_ed" or not r.get("live"):
+            continue
+        lines.append(f'    - name: "{r["name"]}"')
+        lines.append(f'      bid_boards: [{{type: {typ}, url: "{url_fn(r["slug"])}"}}]'
+                     f'  # state={r.get("state") or "?"} open={r.get("open")}')
+    return "\n".join(lines)
 
 
 def write_candidates_csv(rows: list[dict], path) -> None:

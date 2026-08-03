@@ -71,8 +71,9 @@ def fetch(url: str, session: requests.Session | None = None, **kwargs) -> reques
     hammered.
     """
     sess = session or requests
+    kwargs.setdefault("timeout", DEFAULT_TIMEOUT)   # callers may override (e.g. slow CC index)
     try:
-        resp = sess.get(url, timeout=DEFAULT_TIMEOUT, **kwargs)
+        resp = sess.get(url, **kwargs)
         resp.raise_for_status()
         return resp
     except requests.RequestException as exc:

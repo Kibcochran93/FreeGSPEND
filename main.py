@@ -69,7 +69,7 @@ def parse_args():
     p.add_argument("--state", help="Only scan these state keys from sources.yaml (one, or a comma-separated list, e.g. arkansas,texas). Omit to scan all.")
     p.add_argument("--list-states", action="store_true", help="List configured state keys and exit")
     p.add_argument("--doctor", action="store_true", help="Report what's configured/working (deps, config files, tokens, DB contents), then exit")
-    p.add_argument("--discover", metavar="FAMILY", choices=["bonfire", "ionwave"], help="Enumerate + classify Bonfire/Ion Wave tenants (Common Crawl + a live fetch each) into reports/discovered_<family>_<ts>.csv, then exit. Slow + rate-limited; higher-ed yield on these platforms is small.")
+    p.add_argument("--discover", metavar="FAMILY", choices=["bonfire", "ionwave", "planetbids", "opengov"], help="Enumerate + classify a portal family (Common Crawl + a live check each) into reports/discovered_<family>_<ts>.csv, then exit. bonfire/ionwave fetch each tenant; planetbids/opengov RENDER each portal (needs the [scrapling] extra) so they're slower but auto-find higher-ed portals in bulk.")
     p.add_argument("--skip-transparency", action="store_true")
     p.add_argument("--skip-federal", action="store_true", help="Skip the USAspending federal-grant pass")
     p.add_argument("--skip-sam", action="store_true", help="Skip the SAM.gov federal-RFP pass (nationwide; runs only on a full scrape when config/sam.yaml is enabled)")

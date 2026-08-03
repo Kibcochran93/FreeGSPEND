@@ -56,6 +56,44 @@ def test_write_candidates_csv_puts_higher_ed_first():
         out.unlink(missing_ok=True)
 
 
+FIXTURE = Path(__file__).resolve().parents[1] / "tests" / "fixtures" / "planetbids_laccd.html"
+
+
+def test_path_family_id_regex():
+    pb = discovery._PATH_FAMILIES["planetbids"]["id_re"]
+    assert pb.search("https://vendors.planetbids.com/portal/21372/bo/bo-search").group(1) == "21372"
+    og = discovery._PATH_FAMILIES["opengov"]["id_re"]
+    assert og.search("https://procurement.opengov.com/portal/mtsac/projects").group(1) == "mtsac"
+
+
+def test_classify_rendered_planetbids_on_fixture():
+    # `fetch` is stubbed with the saved LACCD render - no browser, no network.
+    html = FIXTURE.read_text(encoding="utf-8")
+    row = discovery.classify_rendered("planetbids", "21372", lambda url: html)
+    assert row["live"] and row["segment"] == "higher_ed", row
+    assert "Los Angeles Community College District" in row["name"], row
+    assert isinstance(row["open"], int) and row["open"] >= 25, row
+
+
+def test_classify_rendered_dead_when_render_returns_none():
+    row = discovery.classify_rendered("planetbids", "999", lambda url: None)
+    assert row["live"] is False and row["segment"] == "dead"
+
+
+def test_to_sources_entries_only_emits_live_higher_ed():
+    rows = [
+        {"slug": "21372", "live": True, "segment": "higher_ed", "state": "",
+         "name": "Los Angeles Community College District", "open": 30},
+        {"slug": "39475", "live": True, "segment": "other", "state": "",
+         "name": "City of Riverside", "open": 30},
+        {"slug": "88", "live": False, "segment": "dead", "state": "", "name": "", "open": 0},
+    ]
+    y = discovery.to_sources_entries(rows, "planetbids")
+    assert "Los Angeles Community College District" in y
+    assert "type: planetbids" in y and "portal/21372/bo/bo-search" in y
+    assert "City of Riverside" not in y   # non-higher-ed excluded
+
+
 if __name__ == "__main__":
     import pytest
 

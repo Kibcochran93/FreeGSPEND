@@ -16,6 +16,8 @@ or scrape anything behind a paywall.
 
 from __future__ import annotations
 
+from contextlib import contextmanager
+
 from .utils import log
 
 # Scrapling 0.4.12 hardcodes Chrome version 149 in its fingerprint generator, but
@@ -75,3 +77,35 @@ def fetch_rendered(url: str, *, network_idle: bool = True, stealth: bool = False
         log.warning("  [render] %s -> HTTP %s", url, status)
         return None
     return getattr(page, "html_content", None)
+
+
+@contextmanager
+def browser_session(stealth: bool = False):
+    """Yield a `fetch(url) -> html|None` function backed by ONE persistent
+    headless browser - far faster than fetch_rendered per URL for bulk work like
+    portal discovery (~5s vs ~25s each). Yields a no-op returning None if
+    Scrapling isn't installed, so callers degrade gracefully."""
+    if not scrapling_available():
+        log.warning('  [render] scrapling not installed - run: pip install "scrapling[fetchers]"')
+        yield lambda url: None
+        return
+    _pin_fingerprint_version()
+    if stealth:
+        from scrapling.fetchers import StealthySession
+        cm = StealthySession(headless=True, solve_cloudflare=True)
+    else:
+        from scrapling.fetchers import DynamicSession
+        cm = DynamicSession(headless=True)
+
+    with cm as sess:
+        def _fetch(url: str) -> str | None:
+            try:
+                page = sess.fetch(url, network_idle=True)
+            except Exception as exc:
+                log.warning("  [render] %s: %s", url, str(exc)[:120])
+                return None
+            status = getattr(page, "status", 200)
+            if status and status >= 400:
+                return None
+            return getattr(page, "html_content", None)
+        yield _fetch
