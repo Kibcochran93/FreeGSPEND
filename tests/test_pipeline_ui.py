@@ -257,5 +257,50 @@ def test_api_list_states_reads_config():
     assert "texas" in states and "arkansas" in states and len(states) >= 10
 
 
+# ------------------------------ launch + UI build ------------------------------
+
+def test_desktop_runnable_as_module(monkeypatch):
+    """`python -m govspend_free.desktop` must actually open the window - i.e. the
+    module keeps a `if __name__ == "__main__": main()` guard that calls main().
+    Regression test: that block was once dropped, so the window never launched."""
+    import runpy
+    import sys
+    import types
+
+    calls: dict = {}
+    fake = types.ModuleType("webview")
+
+    def _create_window(*a, **k):
+        calls["created"] = True
+        calls["html"] = k.get("html", "")
+        return object()
+
+    fake.create_window = _create_window
+    fake.start = lambda *a, **k: calls.__setitem__("started", True)
+    monkeypatch.setitem(sys.modules, "webview", fake)
+    # keep the icon writer from touching the real reports dir
+    monkeypatch.setattr(desktop, "_app_icon", lambda: None)
+
+    runpy.run_module("govspend_free.desktop", run_name="__main__")
+
+    assert calls.get("created") is True, "main() never created the window"
+    assert calls.get("started") is True, "main() never called webview.start()"
+    assert "<!DOCTYPE html>" in calls["html"]
+
+
+def test_build_html_assembles_offline():
+    """_build_html() inlines the SolidJS frontend into one self-contained page:
+    stylesheet + Solid runtime + app.js inlined, mock bridge dropped, no external
+    <link>/<script src> left behind."""
+    h = desktop._build_html()
+    assert h.lstrip().startswith("<!DOCTYPE html>")
+    assert "<style>" in h                      # stylesheet inlined
+    assert "pywebviewready" in h               # app.js inlined
+    assert 'href="styles.css"' not in h        # ...not linked
+    assert 'src="app.js"' not in h             # ...not linked
+    assert 'src="vendor/solid.iife.js"' not in h
+    assert "mock.js" not in h                   # browser-only mock never ships
+
+
 if __name__ == "__main__":
     raise SystemExit(pytest.main([__file__, "-v"]))

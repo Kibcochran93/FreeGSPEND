@@ -530,3 +530,7 @@ def _build_html() -> str:
         "<script>\n" + app + "\n</script>",
     )
     return idx
+
+
+if __name__ == "__main__":
+    main()
