@@ -11,6 +11,12 @@ and runs a HubSpot-grounded account-prioritization play.
   Current `main`: the full feature set below. Working tree clean.
 - Windows + PowerShell. Python 3.14. On OneDrive (SQLite works; if a rare
   `disk I/O error` appears, pause OneDrive during a scrape).
+- **Desktop UI is a buildless SolidJS app** in `govspend_free/webui/`
+  (`index.html` + `styles.css` + `app.js` + vendored `vendor/solid.iife.js`).
+  `desktop.py` inlines these into the pywebview window at runtime — no npm, no
+  build step to *run*. The Python `Api` bridge is unchanged. Preview in a plain
+  browser via `webui/mock.js` (a fake `window.pywebview.api` with sample data,
+  dropped from the desktop build). Light/dark theming included.
 
 ## Setup (already done on this machine)
 ```powershell

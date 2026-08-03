@@ -119,8 +119,9 @@ pip install -e ".[ui]"     # installs pywebview
 govspend-free-ui           # (or: python -m govspend_free.desktop)
 ```
 
-It opens a window with five tabs:
+It opens a window with six tabs:
 
+- **Home** - a RAG (red/amber/green) status dashboard: data freshness, document counts, open opportunities, expirations, and competitor footprint at a glance.
 - **Opportunities** - the ranked feed (same scoring as `--opportunities`), click a title to open it. Each row has a **Brief** button that generates an account brief for that document (see "Account briefs" below).
 - **Search** - full-text search over everything ever scraped (same index as `--search`).
 - **Expirations** - contracts expiring within N days, with the soon-to-expire ones flagged.
@@ -129,6 +130,20 @@ It opens a window with five tabs:
 
 Apollo contacts are **off by default** in the UI (they cost credits) - tick
 "include Apollo contacts" to opt in, and only if `config/apollo.yaml` is set up.
+
+### How the UI is built
+
+The frontend is a **buildless [SolidJS](https://github.com/solidjs/solid) app** in
+`govspend_free/webui/` - `index.html`, `styles.css`, `app.js`, and the Solid
+runtime vendored as `vendor/solid.iife.js` (fully offline: no npm and no build
+step to *run* the app). `desktop.py` inlines all three into one self-contained
+page for the pywebview window; data flows over the `window.pywebview.api.*`
+bridge (the Python `Api` class in `desktop.py`, unchanged). To tweak the UI, edit
+those files and relaunch - no transpile. To develop or preview in a normal
+browser (no pywebview needed), serve the `webui/` folder over HTTP and open
+`index.html`: `webui/mock.js` installs a fake bridge with sample data whenever the
+real one is absent (and is dropped from the desktop build). The vendored bundle
+was produced once with `esbuild` (light/dark theming included).
 
 ## Ops: the "Full Motion" play (CRM-grounded prospecting)
 
@@ -490,7 +505,8 @@ govspend_free/
 ├── govspend_free/
 │   ├── utils.py                    # HTTP, dedup state, keyword matching, PDF text
 │   ├── pipeline.py                 # scrape orchestration (shared by CLI + UI)
-│   ├── desktop.py                  # optional pywebview desktop dashboard
+│   ├── desktop.py                  # pywebview desktop dashboard (Api bridge + inlines webui/)
+│   ├── webui/                      # buildless SolidJS frontend (index.html/styles.css/app.js + vendored solid)
 │   ├── db.py                       # SQLite + FTS5 persistent store
 │   ├── bid_scraper.py
 │   ├── board_minutes_scraper.py

@@ -47,6 +47,10 @@ govspend-free-ui = "govspend_free.desktop:main"
 packages = ["govspend_free"]
 py-modules = ["main"]
 
+[tool.setuptools.package-data]
+# Ship the buildless SolidJS frontend (desktop.py inlines these at runtime).
+govspend_free = ["webui/*.html", "webui/*.css", "webui/*.js", "webui/vendor/*.js"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 # Put the repo root on sys.path during test runs, so tests import
