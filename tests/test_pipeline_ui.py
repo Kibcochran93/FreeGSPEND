@@ -104,6 +104,25 @@ def test_run_scrape_unknown_state_raises(tmp_conn):
         )
 
 
+def test_run_scrape_accepts_a_list_of_states(tmp_conn):
+    # A subset (list) runs just those states, stays offline, and raises on a bad key.
+    result = pipeline.run_scrape(
+        tmp_conn, {"texas": {}, "ohio": {}, "iowa": {}}, {"categories": {}, "watchlist": []},
+        selected_state=["texas", "ohio"],
+        skip_bids=True, skip_board_minutes=True, skip_transparency=True,
+        skip_contracts=True, skip_contacts=True, skip_federal=True,
+    )
+    assert result.counts()["bids"] == 0 and result.skipped == []
+
+    with pytest.raises(ValueError):
+        pipeline.run_scrape(
+            tmp_conn, {"texas": {}, "ohio": {}}, {"categories": {}, "watchlist": []},
+            selected_state=["texas", "atlantis"],
+            skip_bids=True, skip_board_minutes=True, skip_transparency=True,
+            skip_contracts=True, skip_contacts=True, skip_federal=True,
+        )
+
+
 # ------------------------------ desktop.Api ------------------------------
 
 def _seed(conn):

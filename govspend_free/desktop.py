@@ -54,7 +54,7 @@ class Api:
     # -------------------- read-only dashboard queries --------------------
 
     def list_states(self) -> list[str]:
-        return list(_load_yaml(CONFIG_DIR / "sources.yaml").keys())
+        return sorted(_load_yaml(CONFIG_DIR / "sources.yaml").keys())
 
     def opportunities(self, limit: int = 5000, include_old: bool = False) -> list[dict]:
         conn = db.get_conn()
@@ -212,7 +212,7 @@ class Api:
             try:
                 result = pipeline.run_scrape(
                     conn, sources, keywords,
-                    selected_state=(options.get("state") or None),
+                    selected_state=(options.get("states") or None),
                     skip_bids=options.get("skip_bids", False),
                     skip_board_minutes=options.get("skip_board_minutes", False),
                     skip_transparency=options.get("skip_transparency", False),
@@ -778,13 +778,18 @@ HTML = r"""
           </label>
           <span class="hint" id="autoNote" style="flex:1; min-width:240px"></span>
         </div>
-        <div class="row">
-          <label class="chk">States:
-            <select id="state"><option value="">All states</option></select>
-          </label>
+        <div class="row" style="align-items:flex-start">
+          <div style="flex:1; min-width:260px">
+            <div style="display:flex; align-items:center; gap:14px; margin-bottom:6px">
+              <label class="chk" style="font-weight:600"><input type="checkbox" id="stateAll" checked onchange="onStateAllChange()"> All states</label>
+              <span class="hint" id="stateCount"></span>
+              <a onclick="selectAllStates(false)" style="cursor:pointer">clear</a>
+            </div>
+            <div id="stateGrid" style="display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:2px 12px; max-height:200px; overflow:auto; padding:6px 8px; border:1px solid var(--border,#ddd); border-radius:8px"></div>
+          </div>
           <button class="primary big" id="runBtn" onclick="runScrape()">Update everything</button>
-          <span class="hint">Runs every source for the selected state(s).</span>
         </div>
+        <p class="hint" style="margin:2px 0 0">Runs every source for the state(s) you pick. Nationwide passes (SAM.gov, Grants.gov) run only when <em>All states</em> is on.</p>
 
         <details class="adv">
           <summary>Advanced options</summary>
@@ -1326,7 +1331,7 @@ HTML = r"""
     el('scrapeLog').textContent = '';
     el('scrapeLog').classList.remove('hidden');
     const opts = {
-      state: el('state').value,
+      states: selectedStates(),
       skip_bids: el('skip_bids').checked,
       skip_board_minutes: el('skip_board_minutes').checked,
       skip_transparency: el('skip_transparency').checked,
@@ -1387,11 +1392,51 @@ HTML = r"""
     }
   }
 
+  // ---- State multi-select ----
+  function prettyState(key) {
+    return String(key).split('_').map(w => w ? w[0].toUpperCase() + w.slice(1) : w).join(' ');
+  }
+  async function renderStateGrid() {
+    const states = await api().list_states();   // alphabetical
+    const grid = el('stateGrid'); grid.innerHTML = '';
+    states.forEach(s => {
+      const lab = document.createElement('label'); lab.className = 'chk'; lab.style.fontWeight = '400';
+      const cb = document.createElement('input');
+      cb.type = 'checkbox'; cb.className = 'stateChk'; cb.value = s; cb.onchange = onStateGridChange;
+      lab.appendChild(cb); lab.appendChild(document.createTextNode(' ' + prettyState(s)));
+      grid.appendChild(lab);
+    });
+    updateStateCount();
+  }
+  function stateBoxes() { return Array.from(document.querySelectorAll('.stateChk')); }
+  function selectedStates() {
+    // "All states" (or nothing ticked) -> [] -> the backend scans every state.
+    if (el('stateAll').checked) return [];
+    return stateBoxes().filter(c => c.checked).map(c => c.value);
+  }
+  function updateStateCount() {
+    const n = stateBoxes().filter(c => c.checked).length;
+    el('stateCount').textContent = el('stateAll').checked ? `All ${stateBoxes().length} states` : `${n} selected`;
+  }
+  function onStateGridChange() {
+    const any = stateBoxes().some(c => c.checked);
+    el('stateAll').checked = !any;      // ticking a state turns All off; clearing all returns to All
+    updateStateCount();
+  }
+  function onStateAllChange() {
+    if (el('stateAll').checked) stateBoxes().forEach(c => { c.checked = false; });
+    else if (!stateBoxes().some(c => c.checked)) el('stateAll').checked = true;  // can't select nothing
+    updateStateCount();
+  }
+  function selectAllStates(on) {
+    el('stateAll').checked = !!on;
+    stateBoxes().forEach(c => { c.checked = false; });
+    updateStateCount();
+  }
+
   async function init() {
     paintTabIcons();
-    const states = await api().list_states();
-    const sel = el('state');
-    states.forEach(s => { const o = document.createElement('option'); o.value = s; o.textContent = s; sel.appendChild(o); });
+    await renderStateGrid();
     loadSettings();
     loadHome();
   }

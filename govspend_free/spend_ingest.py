@@ -90,15 +90,22 @@ def ingest_socrata_payments(source: dict, session, normalizer, seen: set[str]) -
 
 
 def ingest(conn, sources: dict, *, normalizer=None, session=None,
-           selected_state: str | None = None) -> dict:
+           selected_state: "str | list[str] | None" = None) -> dict:
     """Ingest every Socrata checkbook (with column mappings) into `payments`.
-    Returns stats. Idempotent across runs via the payments.ref UNIQUE key."""
+    Returns stats. Idempotent across runs via the payments.ref UNIQUE key.
+
+    `selected_state` may be None (all), a single key, or a list of keys."""
     from .normalize import Normalizer
     normalizer = normalizer or Normalizer.from_config()
     session = session or utils.get_session()
     seen: set[str] = set()
 
-    states = [selected_state] if selected_state else list(sources.keys())
+    if selected_state is None:
+        states = list(sources.keys())
+    elif isinstance(selected_state, str):
+        states = [selected_state]
+    else:
+        states = list(selected_state)
     stats = {"sources": 0, "resolved": 0, "inserted": 0, "by_state": {}}
     for state_key in states:
         for src in (sources.get(state_key, {}) or {}).get("transparency", []):

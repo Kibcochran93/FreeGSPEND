@@ -492,3 +492,70 @@ utah:
   university_systems:
     - name: "State of Utah (statewide SciQuest marketplace)"
       bid_boards: [{type: jaggaer, url: "https://bids.sciquest.com/apps/Router/PublicEvent?CustomerOrg=StateOfUtah"}]
+
+# --- All-50-states baseline -------------------------------------------------
+# The states below were added so every US state is present and selectable.
+# Each starts with the keyless USAspending federal student-success grants
+# source (nationwide, no key). Add bid portals (bonfire/ionwave/jaggaer/rss)
+# under a `university_systems:` block as they're verified.
+
+alabama:
+  federal_grants:
+    - {name: "USAspending federal student-success grants (AL)", type: usaspending, state: AL}
+colorado:
+  federal_grants:
+    - {name: "USAspending federal student-success grants (CO)", type: usaspending, state: CO}
+hawaii:
+  federal_grants:
+    - {name: "USAspending federal student-success grants (HI)", type: usaspending, state: HI}
+idaho:
+  federal_grants:
+    - {name: "USAspending federal student-success grants (ID)", type: usaspending, state: ID}
+indiana:
+  federal_grants:
+    - {name: "USAspending federal student-success grants (IN)", type: usaspending, state: IN}
+kentucky:
+  federal_grants:
+    - {name: "USAspending federal student-success grants (KY)", type: usaspending, state: KY}
+louisiana:
+  federal_grants:
+    - {name: "USAspending federal student-success grants (LA)", type: usaspending, state: LA}
+maine:
+  federal_grants:
+    - {name: "USAspending federal student-success grants (ME)", type: usaspending, state: ME}
+michigan:
+  federal_grants:
+    - {name: "USAspending federal student-success grants (MI)", type: usaspending, state: MI}
+minnesota:
+  federal_grants:
+    - {name: "USAspending federal student-success grants (MN)", type: usaspending, state: MN}
+mississippi:
+  federal_grants:
+    - {name: "USAspending federal student-success grants (MS)", type: usaspending, state: MS}
+nevada:
+  federal_grants:
+    - {name: "USAspending federal student-success grants (NV)", type: usaspending, state: NV}
+new_hampshire:
+  federal_grants:
+    - {name: "USAspending federal student-success grants (NH)", type: usaspending, state: NH}
+north_dakota:
+  federal_grants:
+    - {name: "USAspending federal student-success grants (ND)", type: usaspending, state: ND}
+rhode_island:
+  federal_grants:
+    - {name: "USAspending federal student-success grants (RI)", type: usaspending, state: RI}
+south_carolina:
+  federal_grants:
+    - {name: "USAspending federal student-success grants (SC)", type: usaspending, state: SC}
+south_dakota:
+  federal_grants:
+    - {name: "USAspending federal student-success grants (SD)", type: usaspending, state: SD}
+washington:
+  federal_grants:
+    - {name: "USAspending federal student-success grants (WA)", type: usaspending, state: WA}
+wisconsin:
+  federal_grants:
+    - {name: "USAspending federal student-success grants (WI)", type: usaspending, state: WI}
+wyoming:
+  federal_grants:
+    - {name: "USAspending federal student-success grants (WY)", type: usaspending, state: WY}

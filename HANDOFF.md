@@ -26,7 +26,8 @@ playwright install chromium            # for --browser (re-run after Playwright 
 ```powershell
 python -m govspend_free.desktop   # desktop UI: Home (RAG dashboard) / Opportunities / Search / Expirations / Ops / Scrape
 python main.py                    # scrape everything (writes to the DB; NO CSVs)
-python main.py --state missouri   # one state (incl. USAspending federal grants for MO/OK/KS/NE/AR)
+python main.py --state missouri   # one state; or a comma list (--state missouri,texas); omit = all 50
+python main.py --list-states      # all 50 states (alphabetical) - now every US state is configured
 python main.py --opportunities    # ranked feed        | --search "retention"
 python main.py --coverage         # national 50-state coverage scorecard (configured/represented/covered) + CSV
 python main.py --backfill-dates   # derive & store each doc's own date (from its text) for rows missing one
@@ -62,6 +63,11 @@ Scrape filters: `--from/--to`, `--only-keyword`, `--only-competitor`, `--skip-fe
   (50-state) coverage; this is the meta-tool that measures it. Reconciles configured education
   sources (sources.yaml) with document evidence (DB) -> per-state status missing/configured/
   represented/covered + a CSV. Baseline at build time: 17/50 configured, 4/50 represented.
+  **Now all 50 states are configured** (missing ones seeded with keyless USAspending federal
+  grants), and the desktop Scrape tab has an alphabetical **multi-select** state picker
+  (pipeline accepts a list of states; nationwide SAM/Grants passes fire only on a full run).
+  A generic **RSS/Atom/JSON feed adapter** (`feeds.py`, `type: rss/atom/json_feed`) wires any
+  institution's public bid feed with no new code. Depth (bid portals per state) is still ongoing.
   ("represented" is doc-based; add per-source poll-health tracking later to distinguish
   "working, no match yet" from "never polled".)
 - **SAM.gov federal RFPs** (`sam_gov.py`, `--skip-sam`) — the federal solicitation board via the

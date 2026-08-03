@@ -106,7 +106,7 @@ def run_scrape(
     sources: dict,
     keywords_cfg: dict,
     *,
-    selected_state: str | None = None,
+    selected_state: "str | list[str] | None" = None,
     skip_bids: bool = False,
     skip_board_minutes: bool = False,
     skip_transparency: bool = False,
@@ -120,8 +120,10 @@ def run_scrape(
 ) -> ScrapeResult:
     """Run the configured scrape passes and persist results to `conn`.
 
-    `selected_state` (already normalized to a lowercase key, or None for all)
-    limits the run to one state. Raises ValueError if it isn't a known key.
+    `selected_state` limits the run: None = every configured state; a single
+    lowercase key (str) = one state; a list of keys = just those states. Raises
+    ValueError on an unknown key. Nationwide passes (SAM.gov / Grants.gov) fire
+    only on a full run (None, or every state selected), never on a subset.
     `criteria` optionally scopes the run by date range / keyword / competitor.
     `use_browser` renders js_rendered sources through headless Chromium.
     """
@@ -137,7 +139,15 @@ def run_scrape(
     seen = utils.load_seen()
     session = utils.get_session()
 
-    states_to_scan = [selected_state] if selected_state else list(sources.keys())
+    if selected_state is None:
+        states_to_scan = list(sources.keys())
+    elif isinstance(selected_state, str):
+        states_to_scan = [selected_state]
+    else:
+        states_to_scan = list(selected_state)
+    # A full run (all states, however requested) is what unlocks the nationwide
+    # federal passes; a chosen subset keeps them off so "scan only these" means it.
+    is_full_run = set(states_to_scan) >= set(sources.keys())
     unknown = [s for s in states_to_scan if s not in sources]
     if unknown:
         raise ValueError(f"Unknown state key(s): {unknown}. Valid keys: {list(sources.keys())}")
@@ -260,7 +270,7 @@ def run_scrape(
 
     # SAM.gov federal RFPs - a single nationwide pass (not per-state), so it runs
     # once on a full scrape. Gated on config/sam.yaml (enabled + api_key).
-    if not skip_sam and selected_state is None:
+    if not skip_sam and is_full_run:
         from . import sam_gov
         sam_cfg, sam_key = sam_gov.load_config()
         if sam_cfg.get("enabled") and sam_key:
@@ -288,7 +298,7 @@ def run_scrape(
 
     # Grants.gov federal grant OPPORTUNITIES - a single nationwide KEYLESS pass,
     # so it runs once on a full scrape. Opt-in via config/grants_gov.yaml (enabled).
-    if not skip_grants and selected_state is None:
+    if not skip_grants and is_full_run:
         from . import grants_gov
         g_cfg = grants_gov.load_config()
         if g_cfg.get("enabled"):
@@ -327,7 +337,7 @@ def run_scrape(
     if not skip_contacts:
         log.info("\n=== CONTACTS (Apollo.io) ===")
         seen_apollo_ids = db.existing_apollo_ids(conn)
-        contacts_sources = sources if not selected_state else {selected_state: sources[selected_state]}
+        contacts_sources = {k: sources[k] for k in states_to_scan}
         result.contacts = contacts.run_contacts_pass(contacts_sources, conn, seen_apollo_ids)
 
     utils.save_seen(seen)

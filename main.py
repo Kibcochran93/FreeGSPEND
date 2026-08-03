@@ -66,7 +66,7 @@ def load_yaml(path: Path) -> dict:
 
 def parse_args():
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    p.add_argument("--state", help="Only scan this state key from sources.yaml (e.g. arkansas)")
+    p.add_argument("--state", help="Only scan these state keys from sources.yaml (one, or a comma-separated list, e.g. arkansas,texas). Omit to scan all.")
     p.add_argument("--list-states", action="store_true", help="List configured state keys and exit")
     p.add_argument("--doctor", action="store_true", help="Report what's configured/working (deps, config files, tokens, DB contents), then exit")
     p.add_argument("--discover", metavar="FAMILY", choices=["bonfire", "ionwave"], help="Enumerate + classify Bonfire/Ion Wave tenants (Common Crawl + a live fetch each) into reports/discovered_<family>_<ts>.csv, then exit. Slow + rate-limited; higher-ed yield on these platforms is small.")
@@ -115,12 +115,17 @@ def main():
     sources = load_yaml(CONFIG_DIR / "sources.yaml")
     keywords_cfg = load_yaml(CONFIG_DIR / "keywords.yaml")
 
-    # Normalize the state key so `--state Texas` matches the lowercase keys
-    # in sources.yaml.
-    selected_state = args.state.lower() if args.state else None
+    # Normalize the state key(s) so `--state Texas` or `--state Texas,Ohio`
+    # match the lowercase keys in sources.yaml. One state stays a str; several
+    # become a list; omitted is None (scan all).
+    if args.state:
+        _states = [s.strip().lower() for s in args.state.split(",") if s.strip()]
+        selected_state = _states[0] if len(_states) == 1 else (_states or None)
+    else:
+        selected_state = None
 
     if args.list_states:
-        for key in sources:
+        for key in sorted(sources):
             print(key)
         return
 
