@@ -1,42 +1,52 @@
 # Keyword taxonomy for classifying bids/RFPs, board minutes, and transparency
-# data. Matching is case-insensitive substring (utils.match_categories).
+# data. Matching is case-insensitive and WORD-BOUNDARY anchored
+# (utils.build_category_matchers): a keyword matches a whole TOKEN (not a prefix
+# and not a raw substring), so short acronyms like "SIS" are safe - they hit
+# "(SIS)" but never "analysis"/"basis". Because matching is case-INsensitive,
+# product names that collide with common words ("workday", "colleague") are
+# spelled with a qualifier ("Workday Student", "Ellucian Colleague") or live on
+# the case-sensitive watchlist instead.
 #
-# Tuned from the SEAtS US Market Intelligence findings (Jul 2026, 16 board
-# transcripts / ~338k words). Core lesson: US boards use OPERATIONAL vocabulary,
-# not UK/vendor jargon. So this list drops the generic single words that caused
-# false positives ("scheduling", "engagement") and the zero-occurrence vendor
-# terms ("timetabling", "attendance monitoring", "student CRM"), and adds the
-# specific phrases institutions actually used. Rule of thumb: prefer specific
-# multi-word phrases - they add signal without the noise bare words create.
-#
-# Note the board-vs-RFP split: minutes use colloquial terms (persistence,
-# utilization, positive attendance); RFPs/bids use formal vendor language
-# (student information system, early alert). A few formal terms are kept
-# because they still matter for the bids pass even though they're rare in
-# minutes - they're specific enough not to create noise.
+# Two vocabularies share these lists (the board-vs-RFP split): MINUTES use
+# colloquial terms (persistence, utilization); RFPs/BIDS use formal vendor
+# language (student information system, academic scheduling, attendance
+# monitoring). A few terms are pass-asymmetric (noisy in one source, useful in
+# the other) - the cleanest fix would be a per-keyword {minutes|bids|both} flag;
+# until then the worst bids offenders (e.g. "master plan") are just dropped.
 
 categories:
   student_success_retention:
     label: "Student Success & Retention"
     keywords:
-      - retention                    # travels intact US<->UK; top success term
+      - "student retention"          # was bare "retention" - dropped to avoid
+      - "retention rate"             #   "records retention" schedules (common noise)
+      - "enrollment retention"       # Salem State RFP phrasing
       - persistence                  # evidenced in 7 of 16 institutions
-      - completion
+      - "completion rate"            # was bare "completion" - dropped to avoid
+      - "degree completion"          #   "completion of construction"/"project completion"
       - "student success"
       - advising
       - "academic advising"
+      - "student case management"    # FL success-platform RFP; qualified to dodge
+      #                                the social-services noise of bare "case management"
+      - "predictive analytics"       # Salem State: "...predictive analytic functionality"
+      - "predictive analytic"        #   (token-boundary matcher needs both forms)
       - "success team"               # Cerritos: "success teams / success coaches"
       - "success coach"
       - "progress check"             # U of Oregon: "three/five-year progress checks"
       - "guided pathways"
       - "strategic enrollment management"
+      - "enrollment management"      # umbrella SEM term (whole-system RFPs)
+      - "intervention management"    # Salem State RFP
+      - "student lifecycle"          # umbrella term for SIS/success suites
       - "early alert"                # vendor term: kept for RFPs, ~absent in minutes
-      - "student success platform"
+      - "early warning"              # noun form; catches "early warning interventions"
 
   academic_space_scheduling:
     label: "Academic & Space Scheduling"
     keywords:
       - "course scheduling"
+      - "class scheduling"           # restored: "class schedule" != "class scheduling"
       - "section scheduling"
       - "class schedule"
       - "room scheduling"
@@ -46,9 +56,28 @@ categories:
       - "utilization study"
       - "space management"
       - "space optimization"
-      - "fill rate"                  # Joliet hand-reviews sections <50% filled
+      - "fill rate"                  # Joliet hand-reviews sections <50% filled (minutes)
       - "block scheduling"           # MSU Denver
-      - "master plan"                # Washtenaw 10-year facilities master plan
+      # NB: "master plan" removed - in the bids pass it tagged every facilities
+      #     master-plan RFP as scheduling (top false positive). Space signal is
+      #     covered by the utilization/space terms above.
+      # RFP/bid vocabulary - the formal terms real solicitations are titled with.
+      - "academic scheduling"
+      - "exam scheduling"
+      - "examination scheduling"
+      - timetabling                  # discriminating form (bare "timetable" dropped:
+      #                                it matched "project timetable")
+      - "room booking"
+      - "room reservation"
+      - "resource scheduling"
+      - "schedule management"        # noun form (dropped the "system" suffix)
+      - "scheduling software"
+      - "scheduling system"
+      - "scheduling solution"
+      - "scheduling platform"
+      - "event scheduling"           # bundled with academic scheduling in RFPs
+      - "event management"           # e.g. Spartanburg RFP + Maine event/room booking
+      - "resource management software"
 
   attendance_compliance:
     label: "Attendance & Compliance"
@@ -57,8 +86,10 @@ categories:
       - "attendance verification"
       - "positive attendance"        # CA funding term (credit + non-credit)
       - "census date"                # FTES counted from census dates
-      - "full-time equivalent"
-      - FTES
+      - "full-time equivalent"       # enrollment funding (see note: FTES dropped)
+      # NB: bare "FTES" removed - case-insensitive it matched staff "FTEs" in every
+      #     budget discussion. The funding signal survives via positive attendance /
+      #     attendance-based funding / apportionment below.
       - "attendance-based funding"
       - "enrollment reporting"       # El Paso CC audited its enrollment reporting
       - "student centered funding formula"
@@ -67,29 +98,44 @@ categories:
       - "last date of attendance"    # formal/RFP term; absent from minutes
       - "roster verification"
       - sevis
+      # RFP/bid vocabulary for attendance/engagement systems (SEAtS core product),
+      # kept in the "X software/system/monitoring" form so they fire on real
+      # solicitations without adding noise to board minutes.
+      - "attendance monitoring"
+      - "attendance management"
+      - "attendance software"
+      - "attendance system"
+      - "attendance solution"
+      - "attendance platform"
+      # US compliance lane - low volume, near-zero competition when they hit.
+      - "enrollment verification"
+      - R2T4
+      - "satisfactory academic progress"
 
   student_communication:
     label: "Student Communication"
     keywords:
       - "student communication"      # North Idaho / City College phrasing
       - "student messaging"
+      - "student engagement"         # canonical form (replaces "...engagement platform")
       - "conversational ai"
       - chatbot
       - "virtual assistant"
-      - "mass notification"
+      # NB: "mass notification" removed - it pulled Everbridge-class emergency
+      #     notification RFPs, which are not a SEAtS product.
 
   sis_erp_migration:
     label: "SIS / ERP Migration"
     keywords:
       - "sis migration"
+      - SIS                          # bare acronym - safe now matching is word-boundary
       - "erp modernization"
       - "enterprise resource planning"
       - "student information system"
       - "curriculum management"
-      - banner
-      - "workday student"
-      - workday                      # MSU Denver named Workday for ERP
-      - colleague
+      - "Ellucian Banner"            # was bare "banner" (matched "banner year"/web banners)
+      - "workday student"            # bare "workday" dropped (matched "during the workday")
+      - "Ellucian Colleague"         # was bare "colleague" (matched "my colleague")
       - jenzabar
       - peoplesoft
       - ellucian
@@ -132,6 +178,23 @@ categories:
       - "budget reduction"
       - "declining enrollment"
 
+  competitor_incumbent:
+    label: "Competitor / Incumbent (Displacement)"
+    # Incumbent product names appear in RFP SCOPE TEXT without the word
+    # "replacement" - a displacement signal. This lives as a CATEGORY (not the
+    # watchlist) because the bids/RFP pass matches categories, not the watchlist.
+    # Trade-offs: "Starfish" also matches "Camp Starfish" in (thin) transparency
+    # data, "Ad Astra" matches the Kansas state motto "Ad Astra Per Aspera" (KS is
+    # in-territory - treat KS minutes/agency hits as unverified until read), and
+    # the three names already on the watchlist double-tag in minutes. Cleaner
+    # long-term fix: apply the watchlist to the bids pass and retire this category.
+    keywords:
+      - Starfish
+      - "EAB Navigate"               # full form - bare "Navigate" is too noisy
+      - Civitas
+      - "Ad Astra"
+      - Coursedog
+
 # Free-text vendor / product watchlist - searched in board minutes and (where
 # scrapable) transparency data. Matching is CASE-SENSITIVE and word-boundaried
 # (utils.build_watchlist_matchers), so "SEAtS" matches the brand but not the
@@ -143,9 +206,11 @@ watchlist:
   - "SEAtS ONE"
 
   # Student-success / retention competitors.
-  # NOTE: use distinctive vendor forms - bare common-word names ("Starfish",
-  # "Watermark") match unrelated companies in checkbook vendor fields
-  # (Camp Starfish, Vivid Seats). EAB Navigate absorbed the Starfish product.
+  # NOTE: the watchlist is case-SENSITIVE but not case-DISTINGUISHING enough to
+  # keep bare common-word names ("Starfish", "Watermark") from matching unrelated
+  # checkbook vendors (Camp Starfish, Vivid Seats) - so those stay off here. Bare
+  # incumbent names for RFP scope-text detection live in the `competitor_incumbent`
+  # CATEGORY above instead. EAB Navigate absorbed Starfish.
   - "Civitas"
   - "Civitas Learning"
   - "EAB"
@@ -162,8 +227,12 @@ watchlist:
   - "Ready Education"
   - "Unit4"
 
-  # SIS / ERP incumbents (mentions can signal a migration window)
+  # SIS / ERP incumbents (mentions can signal a migration window). Case-sensitive,
+  # so "Banner"/"Colleague" catch the capitalized product names in minutes without
+  # the "banner year"/"my colleague" noise the bare category keywords would create.
   - "Ellucian"
+  - "Banner"
+  - "Colleague"
   - "Jenzabar"
   - "Workday Student"
   - "PeopleSoft"

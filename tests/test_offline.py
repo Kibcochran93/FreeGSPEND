@@ -110,6 +110,39 @@ def test_board_minutes_scraper():
     print("  OK - both minutes PDFs correctly flagged for SEAtS watchlist hit + Attendance/Compliance category")
 
 
+def test_category_matching_is_word_boundary():
+    """Category keywords match whole tokens, not raw substrings - this is what
+    lets short acronyms like "SIS" be listed safely."""
+    cfg = {"sis": {"label": "SIS", "keywords": ["SIS"]},
+           "sched": {"label": "Sched", "keywords": ["room booking", "banner"]}}
+    m = utils.build_category_matchers(cfg)
+    # SIS hits the standalone token (any case) ...
+    assert utils.match_categories("Student Information System (SIS) replacement", m) == ["SIS"]
+    assert utils.match_categories("new sis needed", m) == ["SIS"]
+    # ... but never inside ordinary words.
+    for noise in ["data analysis", "on that basis", "the thesis", "a crisis", "emphasis added"]:
+        assert utils.match_categories(noise, m) == [], noise
+    # Phrases and existing single words still match; "banner" no longer fires mid-word.
+    assert "Sched" in utils.match_categories("ad hoc room booking platform", m)
+    assert utils.match_categories("Ellucian Banner ERP", m) == ["Sched"]
+    assert utils.match_categories("the event was bannered across campus", m) == []
+
+
+def test_real_config_matches_known_rfp_titles():
+    """Guard the fix for the missed-tenders report: real US RFP titles must land
+    in a category (they were all silently dropped before)."""
+    keywords_cfg = yaml.safe_load((ROOT_DIR / "config" / "keywords.yaml").read_text(encoding="utf-8"))
+    m = utils.build_category_matchers(keywords_cfg["categories"])
+    for title in [
+        "Enterprise Academic Scheduling and Resource Management Software",   # Savannah State
+        "Event and Room Booking Solution",                                  # U. of Maine
+        "Student Information System Replacement",                           # umbrella SIS
+        "Cloud-Based Timetabling Software",
+        "Attendance Monitoring System",
+    ]:
+        assert utils.match_categories(title, m), f"no category matched: {title!r}"
+
+
 if __name__ == "__main__":
     import pytest
 

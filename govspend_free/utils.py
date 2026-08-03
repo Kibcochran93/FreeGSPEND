@@ -310,11 +310,20 @@ def item_hash(*parts: str) -> str:
 # --------------------------------------------------------------------------
 
 def build_category_matchers(categories_cfg: dict) -> list[tuple[str, str, list[re.Pattern]]]:
-    """Turn keywords.yaml's `categories` block into (key, label, [compiled patterns])."""
+    """Turn keywords.yaml's `categories` block into (key, label, [compiled patterns]).
+
+    Matching is case-insensitive and WORD-BOUNDARY anchored (\\b...\\b), not a
+    raw substring. This lets short acronyms like "SIS" be listed safely: they
+    match the whole token, never mid-word (so "SIS" hits "(SIS)" but not
+    "analysis" / "basis" / "crisis"). It also tightens every existing phrase
+    (e.g. "banner" no longer fires inside "bannered"). Adjacent-word hits still
+    count - "Starfish" matches inside "Camp Starfish" - so brand names that
+    collide with other entities belong on the case-sensitive watchlist."""
     matchers = []
     for key, cfg in categories_cfg.items():
         patterns = [
-            re.compile(re.escape(kw), re.IGNORECASE) for kw in cfg.get("keywords", [])
+            re.compile(r"\b" + re.escape(kw) + r"\b", re.IGNORECASE)
+            for kw in cfg.get("keywords", [])
         ]
         matchers.append((key, cfg.get("label", key), patterns))
     return matchers
