@@ -908,19 +908,33 @@ HTML = r"""
     else c.textContent = (content == null ? '' : String(content));
     return c;
   }
-  function renderTable(mount, cols, rows, buildRow, emptyHtml) {
+  function renderTable(mount, cols, rows, buildRow, emptyHtml, cap) {
     const m = el(mount); m.innerHTML = '';
     if (!rows || !rows.length) { m.innerHTML = '<div class="empty">' + (emptyHtml || 'Nothing to show yet.') + '</div>'; return; }
+    // Cap how many rows we actually build into the DOM. Rendering thousands of
+    // <tr> freezes the webview; rows arrive score-sorted, so the top `cap` are
+    // the most relevant. The full set stays available for the count + CSV export.
+    const shown = (cap && rows.length > cap) ? rows.slice(0, cap) : rows;
     const table = document.createElement('table');
     const thead = document.createElement('thead'); const htr = document.createElement('tr');
     cols.forEach(c => { const th = document.createElement('th'); th.textContent = c; htr.appendChild(th); });
     thead.appendChild(htr); table.appendChild(thead);
     const tb = document.createElement('tbody');
-    rows.forEach(r => tb.appendChild(buildRow(r)));
+    shown.forEach(r => tb.appendChild(buildRow(r)));
     table.appendChild(tb); m.appendChild(table);
+    if (shown.length < rows.length) {
+      const note = document.createElement('div');
+      note.className = 'empty'; note.style.textAlign = 'left';
+      note.innerHTML = 'Showing the top <strong>' + shown.length + '</strong> of ' + rows.length +
+        ' matches, capped so the app stays responsive. Narrow with the filters above — type, ' +
+        'category, keyword, min score, or dates — to surface the rest. (Export CSV includes all ' +
+        rows.length + '.)';
+      m.appendChild(note);
+    }
   }
 
   // ---- Opportunities ----
+  const OPP_RENDER_CAP = 300;   // max rows drawn into the DOM at once (keeps the webview responsive)
   let _oppsAll = [];
   let _oppsShown = [];
 
@@ -1027,7 +1041,7 @@ HTML = r"""
       btn.onclick = () => startBrief(r.id, r.institution || `doc ${r.id}`);
       tr.appendChild(td(btn));
       return tr;
-    }, emptyHtml);
+    }, emptyHtml, OPP_RENDER_CAP);
   }
 
   // ---- Home / Dashboard ----
