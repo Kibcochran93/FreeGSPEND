@@ -457,6 +457,9 @@ new_mexico:
   university_systems:
     - name: "New Mexico Military Institute"
       bid_boards: [{type: bonfire, slug: nmmi, url: "https://nmmi.bonfirehub.com/portal/?tab=openOpportunities"}]
+    # Statewide SciQuest/JAGGAER marketplace (parses via requests). Verified live 2026-08-03 (8 events).
+    - name: "State of New Mexico (statewide SciQuest marketplace)"
+      bid_boards: [{type: jaggaer, url: "https://bids.sciquest.com/apps/Router/PublicEvent?CustomerOrg=StateOfNewMexico"}]
 
 virginia:
   university_systems:
@@ -482,3 +485,10 @@ montana:
   university_systems:
     - name: "State of Montana eMACS (incl. public universities)"
       bid_boards: [{type: jaggaer, url: "https://bids.sciquest.com/apps/Router/PublicEvent?CustomerOrg=StateOfMontana"}]
+
+# State of Utah statewide SciQuest/JAGGAER marketplace (parses via requests).
+# Verified live 2026-08-03 (3 open events).
+utah:
+  university_systems:
+    - name: "State of Utah (statewide SciQuest marketplace)"
+      bid_boards: [{type: jaggaer, url: "https://bids.sciquest.com/apps/Router/PublicEvent?CustomerOrg=StateOfUtah"}]
