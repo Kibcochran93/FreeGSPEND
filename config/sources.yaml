@@ -164,6 +164,24 @@ california:
       bid_boards: [{type: planetbids, url: "https://vendors.planetbids.com/portal/36722/bo/bo-search"}]
     - name: "San Mateo County Community College District"
       bid_boards: [{type: planetbids, url: "https://vendors.planetbids.com/portal/20507/bo/bo-search"}]
+    - name: "Los Rios Community College District"
+      bid_boards: [{type: planetbids, url: "https://vendors.planetbids.com/portal/43669/bo/bo-search"}]
+    - name: "Riverside Community College District"
+      bid_boards: [{type: planetbids, url: "https://vendors.planetbids.com/portal/75897/bo/bo-search"}]
+    - name: "Pasadena Area Community College District"
+      bid_boards: [{type: planetbids, url: "https://vendors.planetbids.com/portal/41447/bo/bo-search"}]
+    - name: "El Camino Community College District"
+      bid_boards: [{type: planetbids, url: "https://vendors.planetbids.com/portal/41631/bo/bo-search"}]
+    - name: "The Claremont Colleges Services (Pomona/CMC/Mudd/Scripps/Pitzer)"
+      bid_boards: [{type: planetbids, url: "https://vendors.planetbids.com/portal/60926/bo/bo-search"}]
+    - name: "Long Beach City College"
+      bid_boards: [{type: planetbids, url: "https://vendors.planetbids.com/portal/53010/bo/bo-search"}]
+    - name: "South Orange County Community College District (Saddleback/IVC)"
+      bid_boards: [{type: planetbids, url: "https://vendors.planetbids.com/portal/39861/bo/bo-search"}]
+    - name: "Cerritos College"
+      bid_boards: [{type: planetbids, url: "https://vendors.planetbids.com/portal/22758/bo/bo-search"}]
+    - name: "Taft College (West Kern CCD)"
+      bid_boards: [{type: planetbids, url: "https://vendors.planetbids.com/portal/66036/bo/bo-search"}]
   transparency:
     - name: "California FI$Cal Open Data"
       url: "https://open.fiscal.ca.gov/"
