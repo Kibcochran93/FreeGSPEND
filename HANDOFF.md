@@ -15,7 +15,7 @@ and runs a HubSpot-grounded account-prioritization play.
 ## Setup (already done on this machine)
 ```powershell
 cd "C:\Users\KibCochran\OneDrive - SEAtS Software\Desktop\Freegspend"
-pip install -e ".[dev,ui,browser]"     # core + pytest + pywebview + playwright
+pip install -e ".[dev,ui,browser,scrapling]"   # core + pytest + pywebview + playwright + scrapling render layer
 playwright install chromium            # for --browser (re-run after Playwright updates)
 # Account briefs: `claude login` once (uses your Claude sub; model auto, don't force sonnet).
 # Ops play: create a READ-ONLY HubSpot Private App, put its token in
@@ -68,6 +68,16 @@ Scrape filters: `--from/--to`, `--only-keyword`, `--only-competitor`, `--skip-fe
   (pipeline accepts a list of states; nationwide SAM/Grants passes fire only on a full run).
   A generic **RSS/Atom/JSON feed adapter** (`feeds.py`, `type: rss/atom/json_feed`) wires any
   institution's public bid feed with no new code. Depth (bid portals per state) is still ongoing.
+- **Scrapling render layer** (`render.py`, opt-in `[scrapling]` extra) — renders JS-SPA / Cloudflare
+  portals in a headless browser (reuses the `[browser]` Playwright) and returns HTML for the normal
+  parsers. First user: **PlanetBids** (`planetbids.py`, `type: planetbids`) — every CA community
+  college (LACCD/State Center/Foothill-De Anza/Yosemite...). Renders the Ember SPA (whose bid API is
+  header-guarded) and parses `.row-highlight` rows; gated on `--browser`. GOTCHA baked into render.py:
+  Scrapling 0.4.12 hardcodes Chrome 149 but its fingerprint dataset tops out at 142, so header
+  generation crashes and the browser fetchers won't import - render.py pins the version to 142 before
+  the engine loads. Discovery also found OpenGov = Cloudflare-walled (needs StealthyFetcher/stealth);
+  Jaggaer per-university pages render server-side already. Public pages only - never forge access
+  headers or bypass logins.
   ("represented" is doc-based; add per-source poll-health tracking later to distinguish
   "working, no match yet" from "never polled".)
 - **SAM.gov federal RFPs** (`sam_gov.py`, `--skip-sam`) — the federal solicitation board via the

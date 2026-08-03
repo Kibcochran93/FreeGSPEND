@@ -144,7 +144,11 @@ california:
           notes: "Verified. Static listing by year/committee, PDF links, archive to 2000."
     # Bonfire RFP portal (type: bonfire; public JSON, no browser) - verified live 2026-07-31.
     - name: "Los Angeles Community College District"
-      bid_boards: [{type: bonfire, slug: laccd, url: "https://laccd.bonfirehub.com/portal/?tab=openOpportunities"}]
+      bid_boards:
+        - {type: bonfire, slug: laccd, url: "https://laccd.bonfirehub.com/portal/?tab=openOpportunities"}
+        # PlanetBids (Ember JS SPA) - rendered via scrapling on --browser. Verified live
+        # 2026-08-03 (134 bids). PlanetBids hosts most CA community-college districts.
+        - {type: planetbids, url: "https://vendors.planetbids.com/portal/21372/bo/bo-search"}
   transparency:
     - name: "California FI$Cal Open Data"
       url: "https://open.fiscal.ca.gov/"

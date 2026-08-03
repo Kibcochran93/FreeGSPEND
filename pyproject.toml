@@ -30,6 +30,10 @@ ui = ["pywebview>=4.4"]
 # Headless-browser rendering of JS sources (--browser). After installing:
 #   pip install -e ".[browser]" && playwright install chromium
 browser = ["playwright>=1.40"]
+# Scrapling-backed rendering for JS SPA / Cloudflare portals (PlanetBids, OpenGov),
+# used by govspend_free/render.py. Reuses the Playwright from [browser].
+#   pip install -e ".[scrapling]"
+scrapling = ["scrapling[fetchers]>=0.4.12"]
 
 [project.scripts]
 # Console entry points. Because the tool reads config/ and writes db/, reports/,

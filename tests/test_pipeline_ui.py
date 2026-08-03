@@ -26,6 +26,10 @@ def test_run_scrape_all_skipped_is_empty(tmp_conn):
         selected_state="texas",
         skip_bids=True, skip_board_minutes=True, skip_transparency=True,
         skip_contracts=True, skip_contacts=True,
+        # Skip the nationwide/federal passes too so this stays fully offline even
+        # when the machine has an enabled config/sam.yaml (single configured state
+        # counts as a full run, which would otherwise fire the live SAM pass).
+        skip_federal=True, skip_sam=True, skip_grants=True,
     )
     assert result.bids == [] and result.contracts == [] and result.skipped == []
     counts = result.counts()

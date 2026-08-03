@@ -1,0 +1,1132 @@
+<html lang="en"><head><meta charset="utf-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><title>PlanetBids Vendor Portal</title><meta name="description" content=""><meta name="viewport" content="width=device-width, initial-scale=1"><meta property="og:image" content="/img/planetBidsLogoOGImage-0565c17a36257c888fee398932ae297e.png"><meta property="og:image:secure_url" content="/img/planetBidsLogoOGImage-0565c17a36257c888fee398932ae297e.png"><meta property="twitter:image" content="/img/planetBidsLogoOGImage-0565c17a36257c888fee398932ae297e.png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon-2396dff8324f903e21cae83837e1707b.png"><link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32x32-eb8b1044fca0d006e248cb413f286975.png"><link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16x16-b8690e429ff77c4d73d06ee82a345923.png"><link rel="manifest" href="/assets/site.webmanifest"><link rel="mask-icon" href="/assets/safari-pinned-tab.svg" color="#0000d8"><meta name="msapplication-TileColor" content="#2b5797"><meta name="theme-color" content="#ffffff"><meta name="em-portal/config/environment" content="%7B%22modulePrefix%22%3A%22em-portal%22%2C%22environment%22%3A%22production%22%2C%22rootURL%22%3A%22%2F%22%2C%22locationType%22%3A%22auto%22%2C%22host%22%3A%22https%3A%2F%2Fapi-external.prod.planetbids.com%22%2C%22idsHostUrl%22%3A%22https%3A%2F%2Fidentity.planetbids.com%22%2C%22emBuildNum%22%3A%2211053%22%2C%22emBuildSha%22%3A%222162576%22%2C%22ember-simple-auth%22%3A%7B%22routeAfterAuthentication%22%3A%22login-success%22%2C%22routeIfAlreadyAuthenticated%22%3A%22login-success%22%2C%22crossOriginWhitelist%22%3A%5B%22https%3A%2F%2Fapi-external.prod.planetbids.com%22%5D%2C%22oauthTokenExchangeEndpoint%22%3A%22http%3A%2F%2Flocalhost%3A8006%2Fpapi%2Foauth%2Ftoken-exchange%2F%22%7D%2C%22ember-simple-auth-token%22%3A%7B%22tokenPropertyName%22%3A%22data.attributes.accessToken%22%2C%22refreshTokenPropertyName%22%3A%22data.attributes.refreshToken%22%2C%22tokenDataPropertyName%22%3A%22tokenData%22%2C%22refreshAccessTokens%22%3Atrue%2C%22tokenExpirationInvalidateSession%22%3Atrue%2C%22tokenExpireName%22%3A%22exp%22%2C%22refreshLeeway%22%3A60%2C%22serverTokenEndpoint%22%3A%22https%3A%2F%2Fapi-external.prod.planetbids.com%2Fpapi%2Foauth%2Ftoken-exchange%2F%22%2C%22serverTokenRefreshEndpoint%22%3A%22https%3A%2F%2Fapi-external.prod.planetbids.com%2Fpapi%2Foauth%2Frefresh%2F%22%7D%2C%22stripe%22%3A%7B%22publishableKey%22%3A%22pk_live_QVJ8RnBD6ynqL7jWD7xYV3nP%22%7D%2C%22portalConfigFlags%22%3A%7B%22disableReloadCheck%22%3A%22true%22%2C%22fileServerHost%22%3A%22https%3A%2F%2Ffiles-prod01.planetbids.com%22%2C%22fileServerHostPath%22%3A%22D%3A%2FwwwrootPB%22%2C%22webServerHost%22%3A%22https%3A%2F%2Ffiles-prod01.planetbids.com%22%2C%22bidAds%22%3Atrue%2C%22portalOrigin%22%3A%22%2F%2Fvendors.planetbids.com%22%2C%22vendorlineOrigin%22%3A%22%2F%2Fvendorline.planetbids.com%22%2C%22msClarityKey%22%3A%22jz9di38c8j%22%2C%22productFruitsKey%22%3A%22ZsZSFBFdUV6YU5Pt%22%2C%22gtmKey%22%3A%22GTM-MDGBVPHW%22%2C%22usermavenKey%22%3A%22UMOCsDn54k%22%2C%22hubSpotPortalId%22%3A%2243702995%22%2C%22hubSpotSupportFormId%22%3A%22a0e2ca0e-5e35-4286-9c5c-a5748b1b49e6%22%2C%22idsHostUrl%22%3A%22https%3A%2F%2Fidentity.planetbids.com%22%2C%22clientIdPortal%22%3A%22connected-app-live-a6ef820a-76d1-4cab-9e2c-26e9f246cf8f%22%2C%22transparencyServiceUrl%22%3A%22https%3A%2F%2Fapi-external.prod.planetbids.com%2Ftransparency%22%7D%2C%22EmberENV%22%3A%7B%22EXTEND_PROTOTYPES%22%3A%7B%22Date%22%3Afalse%7D%2C%22FEATURES%22%3A%7B%7D%2C%22_APPLICATION_TEMPLATE_WRAPPER%22%3Afalse%2C%22_DEFAULT_ASYNC_OBSERVERS%22%3Atrue%2C%22_JQUERY_INTEGRATION%22%3Afalse%2C%22_TEMPLATE_ONLY_GLIMMER_COMPONENTS%22%3Atrue%7D%2C%22APP%22%3A%7B%22name%22%3A%22em-portal%22%2C%22version%22%3A%221.2.35%2B21625764%22%7D%2C%22moment%22%3A%7B%22includeTimezone%22%3A%22all%22%7D%2C%22IDLE_TIMEOUT_WARNING%22%3A3300000%2C%22IDLE_TIMEOUT_LOGOUT%22%3A300000%2C%22IDLE_TIMEOUT_AWAY%22%3A300000%2C%22ember-modal-dialog%22%3A%7B%7D%2C%22BC_ATTACHMENT_SLOTS_ENABLED%22%3A%22true%22%2C%22BID_ADS%22%3A%22true%22%2C%22CLIENT_ID_PORTAL%22%3A%22connected-app-live-a6ef820a-76d1-4cab-9e2c-26e9f246cf8f%22%2C%22DISABLE_RELOAD_CHECK%22%3A%22true%22%2C%22FILE_SERVER_HOST%22%3A%22https%3A%2F%2Ffiles-prod01.planetbids.com%22%2C%22FILE_SERVER_HOST_PATH%22%3A%22D%3A%2FwwwrootPB%22%2C%22GTM_KEY%22%3A%22GTM-MDGBVPHW%22%2C%22HOST_URL%22%3A%22https%3A%2F%2Fapi-external.prod.planetbids.com%22%2C%22HUBSPOT_PORTAL_ID%22%3A%2243702995%22%2C%22HUBSPOT_SUPPORT_FORM_ID%22%3A%22a0e2ca0e-5e35-4286-9c5c-a5748b1b49e6%22%2C%22IDLE_TIMEOUT_AWAY_MINUTES%22%3A%225%22%2C%22IDLE_TIMEOUT_LOGOUT_MINUTES%22%3A%225%22%2C%22IDLE_TIMEOUT_WARNING_MINUTES%22%3A%2255%22%2C%22IDS_HOST_URL%22%3A%22https%3A%2F%2Fidentity.planetbids.com%22%2C%22MS_CLARITY_KEY%22%3A%22jz9di38c8j%22%2C%22PORTAL_ORIGIN%22%3A%22%2F%2Fvendors.planetbids.com%22%2C%22PRODUCT_FRUITS_KEY%22%3A%22ZsZSFBFdUV6YU5Pt%22%2C%22STRIPE_PUBLISHABLE_KEY%22%3A%22pk_live_QVJ8RnBD6ynqL7jWD7xYV3nP%22%2C%22STYTCH_PUBLIC_TOKEN%22%3A%22public-token-live-f6dac249-9c18-4780-bdbd-808c4b551f7b%22%2C%22TRANSPARENCY_SERVICE_URL%22%3A%22https%3A%2F%2Fapi-external.prod.planetbids.com%2Ftransparency%22%2C%22USERMAVEN_KEY%22%3A%22UMOCsDn54k%22%2C%22VENDORLINE_DOMAIN%22%3A%22%2F%2Fvendorline.planetbids.com%22%2C%22VENDORLINE_ORIGIN%22%3A%22%2F%2Fvendorline.planetbids.com%22%2C%22WEB_SERVER_HOST%22%3A%22https%3A%2F%2Ffiles-prod01.planetbids.com%22%7D"><meta name="engine-ac/config/environment" content="%7B%22modulePrefix%22%3A%22engine-ac%22%2C%22environment%22%3A%22production%22%2C%22ember-modal-dialog%22%3A%7B%7D%7D"><meta name="engine-bo/config/environment" content="%7B%22modulePrefix%22%3A%22engine-bo%22%2C%22environment%22%3A%22production%22%2C%22ember-modal-dialog%22%3A%7B%7D%7D"><meta name="engine-cv/config/environment" content="%7B%22modulePrefix%22%3A%22engine-cv%22%2C%22environment%22%3A%22production%22%2C%22ember-modal-dialog%22%3A%7B%7D%7D"><meta name="engine-mc/config/environment" content="%7B%22modulePrefix%22%3A%22engine-mc%22%2C%22environment%22%3A%22production%22%2C%22ember-modal-dialog%22%3A%7B%7D%7D"><meta name="engine-mi/config/environment" content="%7B%22modulePrefix%22%3A%22engine-mi%22%2C%22environment%22%3A%22production%22%2C%22ember-modal-dialog%22%3A%7B%7D%7D"><meta name="engine-vp/config/environment" content="%7B%22modulePrefix%22%3A%22engine-vp%22%2C%22environment%22%3A%22production%22%2C%22ember-modal-dialog%22%3A%7B%7D%7D"><link integrity="" rel="stylesheet" href="/assets/vendor-11edc3c07673b8765e0618905426dad2.css"><link rel="stylesheet" href="/assets/chunk.2690.480829c4ccb682f3b8fb.css" integrity="sha256-wLVHzH3CQASY38r53Tt9jyQa9UyjlznAv3s+7KwqfII= sha512-sAxNcmZ14E8CvtBCN5MA1FY7+q1hYKnXxhT2Q1RuQIfa/7l/j4OiZvShq13bCJEhkfwb9CkwJAsD80lNPRz+bw=="><link rel="stylesheet" href="/assets/chunk.3524.28cfce6722ac3bbc34dc.css" integrity="sha256-lV3oj1ww35q9VeM/2Jm7q5q5YqJoTIO0SHuaJr6cE6g= sha512-jg9o7i+jRnbZhO+sVzSblAjvFOKkCWEgeMjtsAgTcceuIX6RIm0/aZbeZ7Ql5BlrEyTaEIVxe820U5mu8sxUIA=="><link integrity="" rel="stylesheet" href="/assets/em-portal-034bd3cdcdee3979574d4b0f1894c8e0.css"><link rel="preconnect" href="https://fonts.gstatic.com"><link href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@300;400;500" rel="stylesheet"><link rel="stylesheet" type="text/css" href="https://npmcdn.com/flatpickr/dist/themes/material_blue.css"><script async="" src="https://snap.licdn.com/li.lms-analytics/insight.old.min.js"></script><script async="" src="https://scripts.clarity.ms/0.8.69/clarity.js"></script><script type="text/javascript" async="" src="https://snap.licdn.com/li.lms-analytics/insight.min.js"></script><script type="text/javascript" async="" src="https://www.googletagmanager.com/gtag/js?id=G-JEJR5Q3B2M&amp;cx=c&amp;gtm=4e67u0"></script><script type="text/javascript" async="" src="https://www.googletagmanager.com/gtag/js?id=G-FPZBE59JKN&amp;cx=c&amp;gtm=4e67u0"></script><script defer id="um-tracker" data-tracking-host="https://events.usermaven.com" data-key="UMOCsDn54k" data-autocapture="true" src="https://t.usermaven.com/lib.js"></script><script async="" src="https://www.googletagmanager.com/gtm.js?id=GTM-MDGBVPHW"></script><script async="" src="https://www.clarity.ms/tag/jz9di38c8j"></script><script src="https://js.stripe.com/v3/"></script><meta name="em-portal/config/asset-manifest" content="%7B%22bundles%22%3A%7B%22engine-ac%22%3A%7B%22assets%22%3A%5B%7B%22uri%22%3A%22/engines-dist/engine-ac/config/environment-159cc76a86d6b84d8b457a5a383c1358.js%22%2C%22type%22%3A%22js%22%7D%5D%7D%2C%22engine-bo%22%3A%7B%22assets%22%3A%5B%7B%22uri%22%3A%22/engines-dist/engine-bo/config/environment-863e696195e53f88bb9d01c9bc4e112c.js%22%2C%22type%22%3A%22js%22%7D%5D%7D%2C%22engine-cv%22%3A%7B%22assets%22%3A%5B%7B%22uri%22%3A%22/engines-dist/engine-cv/config/environment-d4073ba4f0cd0faa2ef8138acc2ff678.js%22%2C%22type%22%3A%22js%22%7D%5D%7D%2C%22engine-mc%22%3A%7B%22assets%22%3A%5B%7B%22uri%22%3A%22/engines-dist/engine-mc/config/environment-621473e09b6ca1f92ce0d01a660777d0.js%22%2C%22type%22%3A%22js%22%7D%5D%7D%2C%22engine-mi%22%3A%7B%22assets%22%3A%5B%7B%22uri%22%3A%22/engines-dist/engine-mi/config/environment-54b170a252b3da9cd2a0c1f0c65d2b5f.js%22%2C%22type%22%3A%22js%22%7D%5D%7D%2C%22engine-vp%22%3A%7B%22assets%22%3A%5B%7B%22uri%22%3A%22/engines-dist/engine-vp/config/environment-b120d590c81548fd4aaff442d4f69c35.js%22%2C%22type%22%3A%22js%22%7D%5D%7D%7D%7D"><link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&amp;display=swap" rel="stylesheet"><script type="text/javascript">
+      (function(c,l,a,r,i,t,y){
+          c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+          t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+          y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+      })(window, document, "clarity", "script", "jz9di38c8j");
+    </script><script type="text/javascript">
+      ((w,d,s,l,i)=>{
+        w[l]=w[l]||[];
+        w[l].push({'gtm.start': new Date().getTime(), event:'gtm.js'});
+        var f=d.getElementsByTagName(s)[0], j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';
+        j.async=true; j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl; f.parentNode.insertBefore(j,f);
+      })(window,document,'script','dataLayer','GTM-MDGBVPHW');
+    </script><script type="text/javascript">
+      (function(w,d,u){
+          w.$productFruits=w.$productFruits||[];
+          w.productFruits=w.productFruits||{};w.productFruits.scrV='2';
+          let a=d.getElementsByTagName('head')[0];let r=d.createElement('script');r.async=1;r.src=u;a.appendChild(r);
+      })(window,document,'https://app.productfruits.com/static/script.js');
+    </script><script async="" src="https://app.productfruits.com/static/script.js"></script><script type="text/javascript">
+      (function () {
+          window.usermaven = window.usermaven || (function () { (window.usermavenQ = window.usermavenQ || []).push(arguments); })
+          var t = document.createElement('script'),
+              s = document.getElementsByTagName('script')[0];
+          t.defer = true;
+          t.id = 'um-tracker';
+          t.setAttribute('data-tracking-host', "https://events.usermaven.com")
+          t.setAttribute('data-key', 'UMOCsDn54k');
+          t.setAttribute('data-autocapture', 'true');
+          t.src = 'https://t.usermaven.com/lib.js';
+          s.parentNode.insertBefore(t, s);
+      })();
+    </script><script charset="utf-8" src="https://app.productfruits.com/static/chunks/runner.dfb4e24179819342dcb6.js"></script><link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;1,100;1,200;1,300;1,400;1,500;1,600;1,700&amp;display=swap" rel="stylesheet"></head><body class="ember-application is-windows"><noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-MDGBVPHW" height="0" width="0" style="display: none; visibility: hidden;"></iframe></noscript>
+    
+
+    <script src="/ember-runtime-config-e06b591106b7b538eeca5e137429477d.js" integrity="sha256-I4TaVfydcrpPqxM5mK7xRNR3nwm+zHLca4eB5/ydzYQ= sha512-c09+1wpplm5II3mBy/u4lQPFqxC2VMx0LuzjkxwRS+41H+nPauKkU5ZoGwfYVhXrZWM35Vsa2NGefO2o8ufOrw=="></script><script src="/assets/vendor-a3511b2fe7d3d21b9cd549fb349e45e0.js" integrity="sha256-F5Iv+xGJASLg9jA/KsrTpdC63wLWFnouFx2GvUyq2w8= sha512-3JUw2lU4Z+7IiW3FiMgSMPOKSOml8D+PbCklGnwoUrx4al8PSJfrEkWLp9lwUY/1osiNO2/4HYtOx3piizR+yw=="></script><script src="/assets/chunk.2690.480829c4ccb682f3b8fb.js" integrity="sha256-/8NhC5NlvU8S3Xuii1IWosVHQNEnyt7cQAwj98WRa/Y= sha512-w9cY0Fq6aqPLaevb583eU3k/KlTAE4+nRCeYuXPe8fQbCDoVQn61LUluexNfW6pFxAvfGzPs/RzA81+nPgYnTg=="></script><script src="/assets/chunk.6304.8135bc994240357c8f5b.js" integrity="sha256-t8+Gb5a9gemxuInFNGg4SvK0bROQYJHdRJZ65myLQcA= sha512-yTOZgLh7eFmZyKy4shzutYMAEPIF7sWOY9qnK0nuLD9Mx0KwNDfRuwXaXOdL65uo7fXV0PcU/tjUcqrSWVkbug=="></script><script src="/assets/chunk.3524.28cfce6722ac3bbc34dc.js" integrity="sha256-kw/HZPEsl8ftgnEm0ZA3fmMJvCK7plPWHmL+wUkqwf8= sha512-yM6LusMjL/TqBa95zq450WfBuyOOlXjK+hD9zN7yz74dKT5X3FnAMLZinLPdWjlMVX8+60V2K9ZxvWu9B9iEKA=="></script><script src="/assets/em-portal-783e6398587e1ea350b27c9faa16df84.js" integrity="sha256-Hd2YVmGVFYtCuY6m1DOsJDJPq0w2GyW+6CfLv4Mo0zU= sha512-x6FYDBVWCiAKfth8G9vVxSQDz90goRL5q00SwDLESw69cAJqdGQIpnHYiFq/Kdv0R8Svrpc6Ohg6gXsktAoCTA=="></script><div id="modal-overlays"></div><iframe name="__privateStripeMetricsController2410" frameborder="0" allowtransparency="true" scrolling="no" role="presentation" allow="payment *" src="https://js.stripe.com/v3/m-outer-3437aaddcdf6922d623e172c2d6f9278.html#url=https%3A%2F%2Fvendors.planetbids.com%2Fportal%2F21372%2Fbo%2Fbo-search&amp;title=PlanetBids%20Vendor%20Portal&amp;referrer=https%3A%2F%2Fwww.google.com%2F&amp;muid=NA&amp;sid=NA&amp;version=6&amp;preview=false&amp;__shared_params__[version]=v3" aria-hidden="true" tabindex="-1" style="border-width: medium !important; border-style: none !important; border-color: currentcolor !important; border-image: initial !important; margin: 0px !important; padding: 0px !important; width: 1px !important; min-width: 100% !important; overflow: hidden !important; display: block !important; visibility: hidden !important; position: fixed !important; height: 1px !important; pointer-events: none !important; user-select: none !important;"></iframe><div id="navigation-message" tabindex="-1">
+  The page navigation is complete. You may now navigate the page content as you wish.
+</div>
+
+<a href="#main-app-content" class="skip-to-main">
+  Skip to main content
+</a>
+
+  <div id="ember4" class="close-menu navbar ember-view"><div class="navbar-link-brand">
+    <img src="https://files-prod01.planetbids.com/LACCD/20250814111214355%20LACCD-Logo-CMYK-Blue-300dpi.jpg" alt="Portal Home" class="navbar-logo"><div class="navbar-brand navbar-brand-collapsed">
+        Los Angeles Community College District
+    </div>
+
+</div>
+<button aria-label="Toggle menu" title="Toggle menu" id="ember5" class="reactive-button burger-button ember-view" type="button">  <div class="button-wrapper">
+    <div class="button-layer top">
+    </div>
+    <div class="button-layer middle">
+    </div>
+    <div class="button-layer bottom">
+    </div>
+  </div>
+</button>
+<nav class="navbar-items" data-member-only="false"><div class="navbar-icons-group">
+      <div class="navbar-icon">
+          <a id="ember6" class="ember-view nav-link headerLink" aria-label="Help Center" href="/portal/21372/help">
+            <img class="hover" src="/img/helpCenterIconA.svg" alt=""><span class="text">Help Center</span>
+          </a>
+      </div>
+        <div class="navbar-icon">
+          <a id="ember7" class="ember-view nav-link headerLink home-logged-in" aria-label="Home" href="/portal/21372/portal-home">
+            <img class="hover" src="/img/homeIconA.svg" alt=""><span class="text">Home</span>
+          </a>
+        </div>
+        <div class="navbar-login-btn">
+          <a href="#" class="blue-ghost-btn">LOG IN</a>
+        </div>
+    </div>
+</nav></div>
+
+<div tabindex="-1" id="main-app-content" class="app-content ember-view">
+  <div class="bid-search-header">
+  <h1 class="section-heading">Bid Opportunities</h1>
+  <div id="ember13" class="search-menu ember-view"><div class="search-fields">
+  
+    <form novalidate="" id="bid-search" class="pb-form ember-view">
+      <div class="row search-criteria">
+        <div class="col-12 col-sm-3 col-lg-2">
+          <div id="ember14" class="pb-input pb-input-type-text is-valid ember-view"><div class="pb-input-container">
+  <input id="keyword-field" class="ember-text-field ember-view  text-field " maxlength="100" aria-labelledby="keyword-label" type="text"><div class="pb-label-container">
+    <div class="pb-label-left"></div>
+    <div class="pb-label-middle ">
+        <label id="keyword-label" for="keyword-field">
+          Keyword
+        </label>
+    </div>
+    <div class="pb-label-right"></div>
+  </div>
+</div>
+
+</div>
+        </div>
+        <div class="col-12 col-sm-3 col-lg-2">
+          <div id="ember15" class="pb-input pb-input-type-select is-valid ember-view"><div class="pb-input-container">
+  <select id="bidTypeId-field" class=" select-field"><option value="0"></option><option value="1">Bid</option><option value="2">RFI</option><option value="4">RFP</option><option value="8">RFQ</option><option value="16">RFQual</option><option value="32">IPWB</option></select><div class="pb-label-container">
+    <div class="pb-label-left"></div>
+    <div class="pb-label-middle ">
+        <label id="bidTypeId-label" for="bidTypeId-field">
+          Bid Type
+        </label>
+    </div>
+    <div class="pb-label-right"></div>
+  </div>
+</div>
+
+
+</div>
+        </div>
+        <div class="col-12 col-sm-3 col-lg-2" style="padding-left: 3px">
+          <button class="multichooser-btn" aria-label="Select categories" aria-haspopup="dialog" type="button">
+            Categories
+              <svg class="svg-inline--fa fa-square" data-prefix="fas" data-icon="square" aria-hidden="true" focusable="false" role="img" xmlns="http://www.w3.org/2000/svg" viewbox="0 0 448 512"><path fill="currentColor" d="M0 96C0 60.7 28.7 32 64 32H384c35.3 0 64 28.7 64 64V416c0 35.3-28.7 64-64 64H64c-35.3 0-64-28.7-64-64V96z"></path></svg></button>
+        </div>
+        <div class="col-12 col-sm-3 col-lg-2">
+          <div id="ember16" class="pb-input pb-input-type-select is-valid ember-view"><div class="pb-input-container">
+  <select id="stageId-field" class=" select-field"><option value="0"></option><option value="2">Planning</option><option value="3">Bidding</option><option value="4">Closed</option><option value="5">Award Pending</option><option value="6">Awarded</option><option value="7">Canceled</option><option value="8">Rejected</option></select><div class="pb-label-container">
+    <div class="pb-label-left"></div>
+    <div class="pb-label-middle ">
+        <label id="stageId-label" for="stageId-field">
+          Stage
+        </label>
+    </div>
+    <div class="pb-label-right"></div>
+  </div>
+</div>
+
+
+</div>
+        </div>
+      </div>
+      <div class="row search-criteria">
+        <div class="col-12 col-sm-3 col-lg-2">
+          <div id="ember17" class="pb-input pb-input-type-select is-valid ember-view"><div class="pb-input-container">
+  <select id="deptId-field" class=" select-field"><option value="0"></option><option value="1271">Construction </option><option value="682">Construction 1</option><option value="683">Construction 2</option><option value="617">Contracts</option><option value="1275">Furniture, Fixtures and Equipment</option><option value="1276">Human Resources</option><option value="706">Labor Compliance</option><option value="1270">Professional Services</option><option value="684">Task Order</option></select><div class="pb-label-container">
+    <div class="pb-label-left"></div>
+    <div class="pb-label-middle ">
+        <label id="deptId-label" for="deptId-field">
+          Department
+        </label>
+    </div>
+    <div class="pb-label-right"></div>
+  </div>
+</div>
+
+
+</div>
+        </div>
+        <div class="col-12 col-sm-3 col-lg-2">
+          <div id="ember18" class="pb-input pb-input-type-date is-valid ember-view"><div class="pb-input-container">
+  <input class="ember-flatpickr-input flatpickr-input" type="hidden" value="" id="dueDateFrom-field-hidden"><input class="alt-input" placeholder="" tabindex="0" type="text" maxlength="10" autocomplete="off" id="dueDateFrom-field" aria-labelledby="dueDateFrom-label"><div class="pb-label-container">
+    <div class="pb-label-left"></div>
+    <div class="pb-label-middle ">
+      <label id="dueDateFrom-label" for="dueDateFrom-field">
+        Due Date From
+      </label>
+    </div>
+    <div class="pb-label-right"></div>
+  </div>
+  <button class="pb-input-button pb-input-calendar-icon" aria-hidden="true" tabindex="-1" type="button">
+    <svg class="svg-inline--fa fa-calendar-days fa-2x" data-prefix="far" data-icon="calendar-days" aria-hidden="true" focusable="false" role="img" xmlns="http://www.w3.org/2000/svg" viewbox="0 0 448 512"><path fill="currentColor" d="M152 24c0-13.3-10.7-24-24-24s-24 10.7-24 24l0 40L64 64C28.7 64 0 92.7 0 128l0 16 0 48L0 448c0 35.3 28.7 64 64 64l320 0c35.3 0 64-28.7 64-64l0-256 0-48 0-16c0-35.3-28.7-64-64-64l-40 0 0-40c0-13.3-10.7-24-24-24s-24 10.7-24 24l0 40L152 64l0-40zM48 192l80 0 0 56-80 0 0-56zm0 104l80 0 0 64-80 0 0-64zm128 0l96 0 0 64-96 0 0-64zm144 0l80 0 0 64-80 0 0-64zm80-48l-80 0 0-56 80 0 0 56zm0 160l0 40c0 8.8-7.2 16-16 16l-64 0 0-56 80 0zm-128 0l0 56-96 0 0-56 96 0zm-144 0l0 56-64 0c-8.8 0-16-7.2-16-16l0-40 80 0zM272 248l-96 0 0-56 96 0 0 56z"></path></svg></button>
+</div>
+
+
+
+</div>
+        </div>
+        <div class="col-12 col-sm-3 col-lg-2">
+          <div id="ember19" class="pb-input pb-input-type-date is-valid ember-view"><div class="pb-input-container">
+  <input class="ember-flatpickr-input flatpickr-input" type="hidden" value="" id="dueDateTo-field-hidden"><input class="alt-input" placeholder="" tabindex="0" type="text" maxlength="10" autocomplete="off" id="dueDateTo-field" aria-labelledby="dueDateTo-label"><div class="pb-label-container">
+    <div class="pb-label-left"></div>
+    <div class="pb-label-middle ">
+      <label id="dueDateTo-label" for="dueDateTo-field">
+        Due Date To
+      </label>
+    </div>
+    <div class="pb-label-right"></div>
+  </div>
+  <button class="pb-input-button pb-input-calendar-icon" aria-hidden="true" tabindex="-1" type="button">
+    <svg class="svg-inline--fa fa-calendar-days fa-2x" data-prefix="far" data-icon="calendar-days" aria-hidden="true" focusable="false" role="img" xmlns="http://www.w3.org/2000/svg" viewbox="0 0 448 512"><path fill="currentColor" d="M152 24c0-13.3-10.7-24-24-24s-24 10.7-24 24l0 40L64 64C28.7 64 0 92.7 0 128l0 16 0 48L0 448c0 35.3 28.7 64 64 64l320 0c35.3 0 64-28.7 64-64l0-256 0-48 0-16c0-35.3-28.7-64-64-64l-40 0 0-40c0-13.3-10.7-24-24-24s-24 10.7-24 24l0 40L152 64l0-40zM48 192l80 0 0 56-80 0 0-56zm0 104l80 0 0 64-80 0 0-64zm128 0l96 0 0 64-96 0 0-64zm144 0l80 0 0 64-80 0 0-64zm80-48l-80 0 0-56 80 0 0 56zm0 160l0 40c0 8.8-7.2 16-16 16l-64 0 0-56 80 0zm-128 0l0 56-96 0 0-56 96 0zm-144 0l0 56-64 0c-8.8 0-16-7.2-16-16l0-40 80 0zM272 248l-96 0 0-56 96 0 0 56z"></path></svg></button>
+</div>
+
+
+
+</div>
+        </div>
+        <div class="col-12 col-sm-3 col-lg-2" style="padding-left: 3px">
+          <button class="search-clear-btn" type="button">Clear</button>
+          <button class="search-btn" type="submit">Search</button>
+        </div>
+      </div>
+    </form>
+  
+</div>
+</div>
+</div>
+<div class="bids-table-container">
+    <div class="bids-table-filter-message">Found 134 bids</div>
+      <div class="bids-table-overlay"></div>
+      <div id="ember21" class="datatable-container sort-position-right-text table-layout-fixed enable-fixed-header ember-view">    <div class="container-buttons">
+        <button class="btn-reset" title="Reset table defaults" data-test-datatable-reset="" type="button">
+          <span class="fas fa-sync-alt"></span>
+        </button>
+        <div id="ember22" class="edit-columns-container ember-view">  <button class="btn-columns" title="Edit columns" data-test-datatable-controls-btn="" type="button">
+    <span class="fas fa-cog"></span>
+  </button>
+</div>
+    </div>
+    <div class="showingMessage" data-test-datatable-showingmessage="">Showing 30 of 134 bids</div>
+  <div class="table-overflow-container" style="height: 365.719px;">
+      <table class="pb-datatable fixed-header"><colgroup><col width="8.130081300813007%"><col width="32.52032520325203%"><col width="14.959349593495935%"><col width="12.439024390243903%"><col width="13.821138211382115%"><col width="8.211382113821138%"><col width="9.91869918699187%"></colgroup><thead role="rowgroup" id="ember23" class="ember-view"><tr id="ember24" class="ember-view"><th scope="col" tabindex="0" columnname="issueDate" style="width:8.130081300813007%;" title="Posted" role="columnheader" id="ember25" class="left-align ember-view">  <div class="table-sorter" tabindex="0" title="Click to sort by this column" data-ember-action="" data-ember-action-26="26"></div>
+    <span class="span-title" data-test-datatable-th-title="">Posted</span>
+  <div class="multi-sorter ">
+    <div class="three chevron"></div>
+    <div class="one chevron"></div>
+    <div class="two chevron"></div>
+  </div>
+</th>
+    <th scope="col" tabindex="0" columnname="title" style="width:32.52032520325203%;" title="Project Title" role="columnheader" id="ember27" class="left-align ember-view">  <div class="table-sorter" tabindex="0" title="Click to sort by this column" data-ember-action="" data-ember-action-28="28"></div>
+    <span class="span-title" data-test-datatable-th-title="">Project Title</span>
+  <div class="multi-sorter ">
+    <div class="three chevron"></div>
+    <div class="one chevron"></div>
+    <div class="two chevron"></div>
+  </div>
+</th>
+    <th aria-label="invitation number" scope="col" tabindex="0" columnname="invitationNum" style="width:14.959349593495935%;" title="Invitation #" role="columnheader" id="ember29" class="left-align ember-view">  <div class="table-sorter" tabindex="0" title="Click to sort by this column" data-ember-action="" data-ember-action-30="30"></div>
+    <span class="span-title" data-test-datatable-th-title="">Invitation #</span>
+  <div class="multi-sorter ">
+    <div class="three chevron"></div>
+    <div class="one chevron"></div>
+    <div class="two chevron"></div>
+  </div>
+</th>
+    <th scope="col" tabindex="0" columnname="bidDueDate" style="width:12.439024390243903%;" title="Due Date" role="columnheader" id="ember31" class="left-align ember-view">  <div class="table-sorter" tabindex="0" title="Click to sort by this column" data-ember-action="" data-ember-action-32="32"></div>
+    <span class="span-title" data-test-datatable-th-title="">Due Date</span>
+  <div class="multi-sorter ">
+    <div class="three chevron"></div>
+    <div class="one chevron"></div>
+    <div class="two chevron"></div>
+  </div>
+</th>
+    <th scope="col" tabindex="0" columnname="bidDueDateRemainingAdjusted" style="width:13.821138211382115%;" title="Remaining" role="columnheader" id="ember33" class="ember-view">  <div class="table-sorter" tabindex="0" title="Click to sort by this column" data-ember-action="" data-ember-action-34="34"></div>
+    <span class="span-title" data-test-datatable-th-title="">Remaining</span>
+  <div class="multi-sorter ">
+    <div class="three chevron"></div>
+    <div class="one chevron"></div>
+    <div class="two chevron"></div>
+  </div>
+</th>
+    <th scope="col" tabindex="0" columnname="stageStr" style="width:8.211382113821138%;" title="Stage" role="columnheader" id="ember35" class="left-align ember-view">  <div class="table-sorter" tabindex="0" title="Click to sort by this column" data-ember-action="" data-ember-action-36="36"></div>
+    <span class="span-title" data-test-datatable-th-title="">Stage</span>
+  <div class="multi-sorter ">
+    <div class="three chevron"></div>
+    <div class="one chevron"></div>
+    <div class="two chevron"></div>
+  </div>
+</th>
+    <th scope="col" tabindex="0" columnname="bidResponseFormatStr" style="width:9.91869918699187%;" title="Format" role="columnheader" id="ember37" class="disable-sort left-align ember-view">    <span class="span-title" data-test-datatable-th-title="">Format</span>
+</th>
+</tr></thead></table><table role="table" class="pb-datatable data"><colgroup><col width="8.130081300813007%"><col width="32.52032520325203%"><col width="14.959349593495935%"><col width="12.439024390243903%"><col width="13.821138211382115%"><col width="8.211382113821138%"><col width="9.91869918699187%"></colgroup><thead><tr><th></th>
+                <th></th>
+                <th></th>
+                <th></th>
+                <th></th>
+                <th></th>
+                <th></th>
+            </tr></thead><tbody role="rowgroup"><tr tabindex="0" rowattribute="143418" role="row" id="ember38" class="row-highlight  stageStr-bidding byInvitation-false ember-view"><td class="no-wrap" title="2026-06-26 15:17:22.830">
+            06/26/2026
+        </td>
+
+        <td class="title no-wrap ellipsis" title="RFQ (LAVC) - Central Plant Improvement &amp; Hydronic Line Replacement">
+            RFQ (LAVC) - Central Plant Improvement &amp; Hydronic Line Replacement
+                  </td>
+
+        <td class="invitationNum no-wrap ellipsis" title="CS-26-13-V">
+            CS-26-13-V
+                  </td>
+
+        <td class="no-wrap" title="08/12/2026 2:00 PM (PDT)">
+            08/12/2026 02:00pm
+        </td>
+
+      <td data-itemid="143418" tabindex="0" title="" id="ember39" class="no-wrap bid-datetime-countdown ember-view">  <span datavalue="2026-08-12 16:00:00.000" id="ember40" class="datetime-countdown days-remaining ember-view">  <span class="countdown-remaining-label">Remaining</span>
+9 days </span>
+</td>
+
+        <td class="stageStr no-wrap" title="Bidding">
+            Bidding
+                  </td>
+
+        <td class="no-wrap" title="Electronic">
+            Electronic
+                  </td>
+</tr><tr tabindex="0" rowattribute="143770" role="row" id="ember41" class="row-highlight  stageStr-bidding byInvitation-false ember-view"><td class="no-wrap" title="2026-07-07 16:39:56.683">
+            07/07/2026
+        </td>
+
+        <td class="title no-wrap ellipsis" title="RFQ - College Project Leadership Team Services">
+            RFQ - College Project Leadership Team Services
+                  </td>
+
+        <td class="invitationNum no-wrap ellipsis" title="DW-26-01-RFQ">
+            DW-26-01-RFQ
+                  </td>
+
+        <td class="no-wrap" title="08/25/2026 2:00 PM (PDT)">
+            08/25/2026 02:00pm
+        </td>
+
+      <td data-itemid="143770" tabindex="0" title="" id="ember42" class="no-wrap bid-datetime-countdown ember-view">  <span datavalue="2026-08-25 16:00:00.000" id="ember43" class="datetime-countdown days-remaining ember-view">  <span class="countdown-remaining-label">Remaining</span>
+22 days </span>
+</td>
+
+        <td class="stageStr no-wrap" title="Bidding">
+            Bidding
+                  </td>
+
+        <td class="no-wrap" title="Electronic">
+            Electronic
+                  </td>
+</tr><tr tabindex="0" rowattribute="144662" role="row" id="ember44" class="row-highlight  stageStr-bidding byInvitation-false ember-view"><td class="no-wrap" title="2026-07-31 15:44:12.727">
+            07/31/2026
+        </td>
+
+        <td class="title no-wrap ellipsis" title="DW-26-06-RFQ Environmental Services">
+            DW-26-06-RFQ Environmental Services
+                  </td>
+
+        <td class="invitationNum no-wrap ellipsis" title="DW-26-06-RFQ">
+            DW-26-06-RFQ
+                  </td>
+
+        <td class="no-wrap" title="09/01/2026 12:00 PM (PDT)">
+            09/01/2026 12:00pm
+        </td>
+
+      <td data-itemid="144662" tabindex="0" title="" id="ember45" class="no-wrap bid-datetime-countdown ember-view">  <span datavalue="2026-09-01 14:00:00.000" id="ember46" class="datetime-countdown days-remaining ember-view">  <span class="countdown-remaining-label">Remaining</span>
+29 days </span>
+</td>
+
+        <td class="stageStr no-wrap" title="Bidding">
+            Bidding
+                  </td>
+
+        <td class="no-wrap" title="Electronic">
+            Electronic
+                  </td>
+</tr><tr tabindex="0" rowattribute="144417" role="row" id="ember47" class="row-highlight  stageStr-bidding byInvitation-false ember-view"><td class="no-wrap" title="2026-07-27 10:52:06.890">
+            07/27/2026
+        </td>
+
+        <td class="title no-wrap ellipsis" title="DW-26-05-RFQ Constructability Review and Cost Estimating Services">
+            DW-26-05-RFQ Constructability Review and Cost Estimating Services
+                  </td>
+
+        <td class="invitationNum no-wrap ellipsis" title="DW-26-05-RFQ">
+            DW-26-05-RFQ
+                  </td>
+
+        <td class="no-wrap" title="09/02/2026 12:00 PM (PDT)">
+            09/02/2026 12:00pm
+        </td>
+
+      <td data-itemid="144417" tabindex="0" title="" id="ember48" class="no-wrap bid-datetime-countdown ember-view">  <span datavalue="2026-09-02 14:00:00.000" id="ember49" class="datetime-countdown days-remaining ember-view">  <span class="countdown-remaining-label">Remaining</span>
+30 days </span>
+</td>
+
+        <td class="stageStr no-wrap" title="Bidding">
+            Bidding
+                  </td>
+
+        <td class="no-wrap" title="Electronic">
+            Electronic
+                  </td>
+</tr><tr tabindex="0" rowattribute="143413" role="row" id="ember50" class="row-highlight  stageStr-closed byInvitation-false ember-view"><td class="no-wrap" title="2026-06-24 14:57:26.400">
+            06/24/2026
+        </td>
+
+        <td class="title no-wrap ellipsis" title="RFQ - ELAC Northeast Drainage Area – Storm Water Implementation">
+            RFQ - ELAC Northeast Drainage Area – Storm Water Implementation
+                  </td>
+
+        <td class="invitationNum no-wrap ellipsis" title="CS-26-12-E">
+            CS-26-12-E
+                  </td>
+
+        <td class="no-wrap" title="07/22/2026 2:00 PM (PDT)">
+            07/22/2026 02:00pm
+        </td>
+
+      <td data-itemid="143413" tabindex="0" title="" id="ember51" class="no-wrap bid-datetime-countdown ember-view">  <span datavalue="" id="ember52" class="datetime-countdown color-text no-time-remaining ember-view"></span>
+</td>
+
+        <td class="stageStr no-wrap" title="Closed">
+            Closed
+                  </td>
+
+        <td class="no-wrap" title="Electronic">
+            Electronic
+                  </td>
+</tr><tr tabindex="0" rowattribute="142311" role="row" id="ember53" class="row-highlight  stageStr-award-pending byInvitation-false ember-view"><td class="no-wrap" title="2026-05-27 09:30:22.437">
+            05/27/2026
+        </td>
+
+        <td class="title no-wrap ellipsis" title="Purchase Agreement for Sports Seating Solutions">
+            Purchase Agreement for Sports Seating Solutions
+                  </td>
+
+        <td class="invitationNum no-wrap ellipsis" title="FE-26-02-RFB">
+            FE-26-02-RFB
+                  </td>
+
+        <td class="no-wrap" title="07/20/2026 2:00 PM (PDT)">
+            07/20/2026 02:00pm
+        </td>
+
+      <td data-itemid="142311" tabindex="0" title="" id="ember54" class="no-wrap bid-datetime-countdown ember-view">  <span datavalue="" id="ember55" class="datetime-countdown color-text no-time-remaining ember-view"></span>
+</td>
+
+        <td class="stageStr no-wrap" title="Award Pending">
+            Award Pending
+                  </td>
+
+        <td class="no-wrap" title="Electronic">
+            Electronic
+                  </td>
+</tr><tr tabindex="0" rowattribute="142640" role="row" id="ember56" class="row-highlight  stageStr-closed byInvitation-false ember-view"><td class="no-wrap" title="2026-05-29 15:18:04.757">
+            05/29/2026
+        </td>
+
+        <td class="title no-wrap ellipsis" title="RFQ - Pre-Qualified Service Provider for Construction Services">
+            RFQ - Pre-Qualified Service Provider for Construction Services
+                  </td>
+
+        <td class="invitationNum no-wrap ellipsis" title="DW-26-03-RFQ">
+            DW-26-03-RFQ
+                  </td>
+
+        <td class="no-wrap" title="07/16/2026 2:00 PM (PDT)">
+            07/16/2026 02:00pm
+        </td>
+
+      <td data-itemid="142640" tabindex="0" title="" id="ember57" class="no-wrap bid-datetime-countdown ember-view">  <span datavalue="" id="ember58" class="datetime-countdown color-text no-time-remaining ember-view"></span>
+</td>
+
+        <td class="stageStr no-wrap" title="Closed">
+            Closed
+                  </td>
+
+        <td class="no-wrap" title="Electronic">
+            Electronic
+                  </td>
+</tr><tr tabindex="0" rowattribute="140905" role="row" id="ember59" class="row-highlight  stageStr-closed byInvitation-false ember-view"><td class="no-wrap" title="2026-04-23 09:09:45.870">
+            04/23/2026
+        </td>
+
+        <td class="title no-wrap ellipsis" title="RFQ - LAMC - Access Control System (Quadrant 1)">
+            RFQ - LAMC - Access Control System (Quadrant 1)
+                  </td>
+
+        <td class="invitationNum no-wrap ellipsis" title="CS-26-07-M">
+            CS-26-07-M
+                  </td>
+
+        <td class="no-wrap" title="06/04/2026 2:00 PM (PDT)">
+            06/04/2026 02:00pm
+        </td>
+
+      <td data-itemid="140905" tabindex="0" title="" id="ember60" class="no-wrap bid-datetime-countdown ember-view">  <span datavalue="" id="ember61" class="datetime-countdown color-text no-time-remaining ember-view"></span>
+</td>
+
+        <td class="stageStr no-wrap" title="Closed">
+            Closed
+                  </td>
+
+        <td class="no-wrap" title="Electronic">
+            Electronic
+                  </td>
+</tr><tr tabindex="0" rowattribute="140933" role="row" id="ember62" class="row-highlight  stageStr-closed byInvitation-false ember-view"><td class="no-wrap" title="2026-04-14 12:03:38.120">
+            04/14/2026
+        </td>
+
+        <td class="title no-wrap ellipsis" title="LACC - North Campus Lines Replacement &amp; Central Plant Decarbonization RFQ">
+            LACC - North Campus Lines Replacement &amp; Central Plant Decarbonization RFQ
+                  </td>
+
+        <td class="invitationNum no-wrap ellipsis" title="CS-26-09-C">
+            CS-26-09-C
+                  </td>
+
+        <td class="no-wrap" title="05/29/2026 2:00 PM (PDT)">
+            05/29/2026 02:00pm
+        </td>
+
+      <td data-itemid="140933" tabindex="0" title="" id="ember63" class="no-wrap bid-datetime-countdown ember-view">  <span datavalue="" id="ember64" class="datetime-countdown color-text no-time-remaining ember-view"></span>
+</td>
+
+        <td class="stageStr no-wrap" title="Closed">
+            Closed
+                  </td>
+
+        <td class="no-wrap" title="Electronic and Paper">
+            Electronic and Paper
+                  </td>
+</tr><tr tabindex="0" rowattribute="141653" role="row" id="ember65" class="row-highlight  stageStr-award-pending byInvitation-false ember-view"><td class="no-wrap" title="2026-05-12 09:00:11.377">
+            05/12/2026
+        </td>
+
+        <td class="title no-wrap ellipsis" title="Task Order Contract for Web Hosting and Digital Media Services">
+            Task Order Contract for Web Hosting and Digital Media Services
+                  </td>
+
+        <td class="invitationNum no-wrap ellipsis" title="SP-26-01-RFQP">
+            SP-26-01-RFQP
+                  </td>
+
+        <td class="no-wrap" title="05/27/2026 2:00 PM (PDT)">
+            05/27/2026 02:00pm
+        </td>
+
+      <td data-itemid="141653" tabindex="0" title="" id="ember66" class="no-wrap bid-datetime-countdown ember-view">  <span datavalue="" id="ember67" class="datetime-countdown color-text no-time-remaining ember-view"></span>
+</td>
+
+        <td class="stageStr no-wrap" title="Award Pending">
+            Award Pending
+                  </td>
+
+        <td class="no-wrap" title="Electronic">
+            Electronic
+                  </td>
+</tr><tr tabindex="0" rowattribute="139179" role="row" id="ember68" class="row-highlight  stageStr-closed byInvitation-false ember-view"><td class="no-wrap" title="2026-03-05 17:50:59.533">
+            03/05/2026
+        </td>
+
+        <td class="title no-wrap ellipsis" title="LACCD Student Housing Development Opportunity (LAPC/LACC)">
+            LACCD Student Housing Development Opportunity (LAPC/LACC)
+                  </td>
+
+        <td class="invitationNum no-wrap ellipsis" title="CS-26-06-PC">
+            CS-26-06-PC
+                  </td>
+
+        <td class="no-wrap" title="05/08/2026 2:00 PM (PDT)">
+            05/08/2026 02:00pm
+        </td>
+
+      <td data-itemid="139179" tabindex="0" title="" id="ember69" class="no-wrap bid-datetime-countdown ember-view">  <span datavalue="" id="ember70" class="datetime-countdown color-text no-time-remaining ember-view"></span>
+</td>
+
+        <td class="stageStr no-wrap" title="Closed">
+            Closed
+                  </td>
+
+        <td class="no-wrap" title="Electronic">
+            Electronic
+                  </td>
+</tr><tr tabindex="0" rowattribute="139752" role="row" id="ember71" class="row-highlight  stageStr-closed byInvitation-false ember-view"><td class="no-wrap" title="2026-03-20 06:00:47.310">
+            03/20/2026
+        </td>
+
+        <td class="title no-wrap ellipsis" title="RFQ LAVC Athletic Fields - Soccer and Multipurpose Fields Upgrades, and New Field House">
+            RFQ LAVC Athletic Fields - Soccer and Multipurpose Fields Upgrades, and New Field House
+                  </td>
+
+        <td class="invitationNum no-wrap ellipsis" title="CS-26-04-V RFQ">
+            CS-26-04-V RFQ
+                  </td>
+
+        <td class="no-wrap" title="04/30/2026 2:00 PM (PDT)">
+            04/30/2026 02:00pm
+        </td>
+
+      <td data-itemid="139752" tabindex="0" title="" id="ember72" class="no-wrap bid-datetime-countdown ember-view">  <span datavalue="" id="ember73" class="datetime-countdown color-text no-time-remaining ember-view"></span>
+</td>
+
+        <td class="stageStr no-wrap" title="Closed">
+            Closed
+                  </td>
+
+        <td class="no-wrap" title="Electronic">
+            Electronic
+                  </td>
+</tr><tr tabindex="0" rowattribute="139581" role="row" id="ember74" class="row-highlight  stageStr-award-pending byInvitation-false ember-view"><td class="no-wrap" title="2026-03-16 14:59:06.653">
+            03/16/2026
+        </td>
+
+        <td class="title no-wrap ellipsis" title="DW-26-02-RFQ Real Estate, Student Housing, Appraisal, Brokerage, and Property Management Consulting Services">
+            DW-26-02-RFQ Real Estate, Student Housing, Appraisal, Brokerage, and Property Management Consulting Services
+                  </td>
+
+        <td class="invitationNum no-wrap ellipsis" title="DW-26-02-RFQ">
+            DW-26-02-RFQ
+                  </td>
+
+        <td class="no-wrap" title="04/15/2026 12:00 PM (PDT)">
+            04/15/2026 12:00pm
+        </td>
+
+      <td data-itemid="139581" tabindex="0" title="" id="ember75" class="no-wrap bid-datetime-countdown ember-view">  <span datavalue="" id="ember76" class="datetime-countdown color-text no-time-remaining ember-view"></span>
+</td>
+
+        <td class="stageStr no-wrap" title="Award Pending">
+            Award Pending
+                  </td>
+
+        <td class="no-wrap" title="Electronic and Paper">
+            Electronic and Paper
+                  </td>
+</tr><tr tabindex="0" rowattribute="139531" role="row" id="ember77" class="row-highlight  stageStr-closed byInvitation-false ember-view"><td class="no-wrap" title="2026-03-17 13:07:13.843">
+            03/17/2026
+        </td>
+
+        <td class="title no-wrap ellipsis" title="RFQ - LAPC - Stadium Parking Lot 5 Biofiltration">
+            RFQ - LAPC - Stadium Parking Lot 5 Biofiltration
+                  </td>
+
+        <td class="invitationNum no-wrap ellipsis" title="CS-26-10-P">
+            CS-26-10-P
+                  </td>
+
+        <td class="no-wrap" title="04/14/2026 2:00 PM (PDT)">
+            04/14/2026 02:00pm
+        </td>
+
+      <td data-itemid="139531" tabindex="0" title="" id="ember78" class="no-wrap bid-datetime-countdown ember-view">  <span datavalue="" id="ember79" class="datetime-countdown color-text no-time-remaining ember-view"></span>
+</td>
+
+        <td class="stageStr no-wrap" title="Closed">
+            Closed
+                  </td>
+
+        <td class="no-wrap" title="Electronic">
+            Electronic
+                  </td>
+</tr><tr tabindex="0" rowattribute="139636" role="row" id="ember80" class="row-highlight  stageStr-awarded byInvitation-false ember-view"><td class="no-wrap" title="2026-03-24 09:00:02.330">
+            03/24/2026
+        </td>
+
+        <td class="title no-wrap ellipsis" title="Purchase Agreement for Window Covering Solutions">
+            Purchase Agreement for Window Covering Solutions
+                  </td>
+
+        <td class="invitationNum no-wrap ellipsis" title="FE-26-01-RFB">
+            FE-26-01-RFB
+                  </td>
+
+        <td class="no-wrap" title="04/10/2026 2:00 PM (PDT)">
+            04/10/2026 02:00pm
+        </td>
+
+      <td data-itemid="139636" tabindex="0" title="" id="ember81" class="no-wrap bid-datetime-countdown ember-view">  <span datavalue="" id="ember82" class="datetime-countdown color-text no-time-remaining ember-view"></span>
+</td>
+
+        <td class="stageStr no-wrap" title="Awarded">
+            Awarded
+                  </td>
+
+        <td class="no-wrap" title="Electronic">
+            Electronic
+                  </td>
+</tr><tr tabindex="0" rowattribute="137892" role="row" id="ember83" class="row-highlight  stageStr-closed byInvitation-false ember-view"><td class="no-wrap" title="2026-02-03 14:43:56.193">
+            02/03/2026
+        </td>
+
+        <td class="title no-wrap ellipsis" title="RFQ - LATTC - Upgrade Campus Main Electrical Distribution System">
+            RFQ - LATTC - Upgrade Campus Main Electrical Distribution System
+                  </td>
+
+        <td class="invitationNum no-wrap ellipsis" title="CS-26-05-T">
+            CS-26-05-T
+                  </td>
+
+        <td class="no-wrap" title="03/10/2026 2:00 PM (PDT)">
+            03/10/2026 02:00pm
+        </td>
+
+      <td data-itemid="137892" tabindex="0" title="" id="ember84" class="no-wrap bid-datetime-countdown ember-view">  <span datavalue="" id="ember85" class="datetime-countdown color-text no-time-remaining ember-view"></span>
+</td>
+
+        <td class="stageStr no-wrap" title="Closed">
+            Closed
+                  </td>
+
+        <td class="no-wrap" title="Electronic">
+            Electronic
+                  </td>
+</tr><tr tabindex="0" rowattribute="137482" role="row" id="ember86" class="row-highlight  stageStr-closed byInvitation-false ember-view"><td class="no-wrap" title="2026-01-21 12:28:20.330">
+            01/21/2026
+        </td>
+
+        <td class="title no-wrap ellipsis" title="RFQ LAPC - New Baseball Field &amp; Upgrades, New Softball Field, New Field House/Concessions RFQ">
+            RFQ LAPC - New Baseball Field &amp; Upgrades, New Softball Field, New Field House/Concessions RFQ
+                  </td>
+
+        <td class="invitationNum no-wrap ellipsis" title="CS-26-01-P RFQ">
+            CS-26-01-P RFQ
+                  </td>
+
+        <td class="no-wrap" title="02/20/2026 2:00 PM (PDT)">
+            02/20/2026 02:00pm
+        </td>
+
+      <td data-itemid="137482" tabindex="0" title="" id="ember87" class="no-wrap bid-datetime-countdown ember-view">  <span datavalue="" id="ember88" class="datetime-countdown color-text no-time-remaining ember-view"></span>
+</td>
+
+        <td class="stageStr no-wrap" title="Closed">
+            Closed
+                  </td>
+
+        <td class="no-wrap" title="Electronic and Paper">
+            Electronic and Paper
+                  </td>
+</tr><tr tabindex="0" rowattribute="137101" role="row" id="ember89" class="row-highlight  stageStr-canceled byInvitation-false ember-view"><td class="no-wrap" title="2026-01-12 13:44:01.307">
+            01/12/2026
+        </td>
+
+        <td class="title no-wrap ellipsis" title="RFQ - LAHC - CDC Building Waste Line Replacement &amp; Planetarium Retrofit">
+            RFQ - LAHC - CDC Building Waste Line Replacement &amp; Planetarium Retrofit
+                  </td>
+
+        <td class="invitationNum no-wrap ellipsis" title="CS-26-02-H">
+            CS-26-02-H
+                  </td>
+
+        <td class="no-wrap" title="02/12/2026 2:00 PM (PDT)">
+            02/12/2026 02:00pm
+        </td>
+
+      <td data-itemid="137101" tabindex="0" title="" id="ember90" class="no-wrap bid-datetime-countdown ember-view">  <span datavalue="" id="ember91" class="datetime-countdown color-text no-time-remaining ember-view"></span>
+</td>
+
+        <td class="stageStr no-wrap" title="Canceled">
+            Canceled
+                  </td>
+
+        <td class="no-wrap" title="Electronic">
+            Electronic
+                  </td>
+</tr><tr tabindex="0" rowattribute="136565" role="row" id="ember92" class="row-highlight  stageStr-award-pending byInvitation-false ember-view"><td class="no-wrap" title="2025-12-16 09:16:48.717">
+            12/16/2025
+        </td>
+
+        <td class="title no-wrap ellipsis" title="DW-25-09-RFQ Energy and Sustainability Consultant Services">
+            DW-25-09-RFQ Energy and Sustainability Consultant Services
+                  </td>
+
+        <td class="invitationNum no-wrap ellipsis" title="DW-25-09-RFQ">
+            DW-25-09-RFQ
+                  </td>
+
+        <td class="no-wrap" title="02/04/2026 12:00 PM (PDT)">
+            02/04/2026 12:00pm
+        </td>
+
+      <td data-itemid="136565" tabindex="0" title="" id="ember93" class="no-wrap bid-datetime-countdown ember-view">  <span datavalue="" id="ember94" class="datetime-countdown color-text no-time-remaining ember-view"></span>
+</td>
+
+        <td class="stageStr no-wrap" title="Award Pending">
+            Award Pending
+                  </td>
+
+        <td class="no-wrap" title="Electronic">
+            Electronic
+                  </td>
+</tr><tr tabindex="0" rowattribute="136968" role="row" id="ember95" class="row-highlight  stageStr-awarded byInvitation-false ember-view"><td class="no-wrap" title="2026-01-13 13:23:12.353">
+            01/13/2026
+        </td>
+
+        <td class="title no-wrap ellipsis" title="Purchase Agreement for Residence Hall Furnishings">
+            Purchase Agreement for Residence Hall Furnishings
+                  </td>
+
+        <td class="invitationNum no-wrap ellipsis" title="FE-25-07-RFB">
+            FE-25-07-RFB
+                  </td>
+
+        <td class="no-wrap" title="01/28/2026 2:00 PM (PDT)">
+            01/28/2026 02:00pm
+        </td>
+
+      <td data-itemid="136968" tabindex="0" title="" id="ember96" class="no-wrap bid-datetime-countdown ember-view">  <span datavalue="" id="ember97" class="datetime-countdown color-text no-time-remaining ember-view"></span>
+</td>
+
+        <td class="stageStr no-wrap" title="Awarded">
+            Awarded
+                  </td>
+
+        <td class="no-wrap" title="Electronic">
+            Electronic
+                  </td>
+</tr><tr tabindex="0" rowattribute="136593" role="row" id="ember98" class="row-highlight  stageStr-closed byInvitation-false ember-view"><td class="no-wrap" title="2025-12-17 14:31:38.393">
+            12/17/2025
+        </td>
+
+        <td class="title no-wrap ellipsis" title="RFQ - ELAC - Facilities M&amp;O Replacement / Demolition of Facilities Shops H9 / Demolition of Facilities Offices K9A / Demolition of Facilities Storage K9B">
+            RFQ - ELAC - Facilities M&amp;O Replacement / Demolition of Facilities Shops H9 / Demolition of Facilities Offices K9A / Demolition of Facilities Storage K9B
+                  </td>
+
+        <td class="invitationNum no-wrap ellipsis" title="CS-25-20-E">
+            CS-25-20-E
+                  </td>
+
+        <td class="no-wrap" title="01/22/2026 2:00 PM (PDT)">
+            01/22/2026 02:00pm
+        </td>
+
+      <td data-itemid="136593" tabindex="0" title="" id="ember99" class="no-wrap bid-datetime-countdown ember-view">  <span datavalue="" id="ember100" class="datetime-countdown color-text no-time-remaining ember-view"></span>
+</td>
+
+        <td class="stageStr no-wrap" title="Closed">
+            Closed
+                  </td>
+
+        <td class="no-wrap" title="Electronic">
+            Electronic
+                  </td>
+</tr><tr tabindex="0" rowattribute="136435" role="row" id="ember101" class="row-highlight  stageStr-awarded byInvitation-false ember-view"><td class="no-wrap" title="2025-12-17 09:00:47.370">
+            12/17/2025
+        </td>
+
+        <td class="title no-wrap ellipsis" title="Multiple Award Task Order Contract (MATOC) for Security Patrol Services">
+            Multiple Award Task Order Contract (MATOC) for Security Patrol Services
+                  </td>
+
+        <td class="invitationNum no-wrap ellipsis" title="SP-25-02-RFQ">
+            SP-25-02-RFQ
+                  </td>
+
+        <td class="no-wrap" title="01/09/2026 2:00 PM (PDT)">
+            01/09/2026 02:00pm
+        </td>
+
+      <td data-itemid="136435" tabindex="0" title="" id="ember102" class="no-wrap bid-datetime-countdown ember-view">  <span datavalue="" id="ember103" class="datetime-countdown color-text no-time-remaining ember-view"></span>
+</td>
+
+        <td class="stageStr no-wrap" title="Awarded">
+            Awarded
+                  </td>
+
+        <td class="no-wrap" title="Electronic">
+            Electronic
+                  </td>
+</tr><tr tabindex="0" rowattribute="135942" role="row" id="ember104" class="row-highlight  stageStr-award-pending byInvitation-false ember-view"><td class="no-wrap" title="2025-11-20 13:17:48.837">
+            11/20/2025
+        </td>
+
+        <td class="title no-wrap ellipsis" title="DW-25-08-RFQ California Environmental Quality Act (CEQA) Consulting Services">
+            DW-25-08-RFQ California Environmental Quality Act (CEQA) Consulting Services
+                  </td>
+
+        <td class="invitationNum no-wrap ellipsis" title="DW-25-08-RFQ">
+            DW-25-08-RFQ
+                  </td>
+
+        <td class="no-wrap" title="01/07/2026 12:00 PM (PDT)">
+            01/07/2026 12:00pm
+        </td>
+
+      <td data-itemid="135942" tabindex="0" title="" id="ember105" class="no-wrap bid-datetime-countdown ember-view">  <span datavalue="" id="ember106" class="datetime-countdown color-text no-time-remaining ember-view"></span>
+</td>
+
+        <td class="stageStr no-wrap" title="Award Pending">
+            Award Pending
+                  </td>
+
+        <td class="no-wrap" title="Electronic">
+            Electronic
+                  </td>
+</tr><tr tabindex="0" rowattribute="135859" role="row" id="ember107" class="row-highlight  stageStr-closed byInvitation-false ember-view"><td class="no-wrap" title="2025-11-19 15:00:30.527">
+            11/19/2025
+        </td>
+
+        <td class="title no-wrap ellipsis" title="RFQ - LAHC Campus Wide Utilities Improvements">
+            RFQ - LAHC Campus Wide Utilities Improvements
+                  </td>
+
+        <td class="invitationNum no-wrap ellipsis" title="CS-25-14-H">
+            CS-25-14-H
+                  </td>
+
+        <td class="no-wrap" title="12/22/2025 2:00 PM (PDT)">
+            12/22/2025 02:00pm
+        </td>
+
+      <td data-itemid="135859" tabindex="0" title="" id="ember108" class="no-wrap bid-datetime-countdown ember-view">  <span datavalue="" id="ember109" class="datetime-countdown color-text no-time-remaining ember-view"></span>
+</td>
+
+        <td class="stageStr no-wrap" title="Closed">
+            Closed
+                  </td>
+
+        <td class="no-wrap" title="Electronic">
+            Electronic
+                  </td>
+</tr><tr tabindex="0" rowattribute="135606" role="row" id="ember110" class="row-highlight  stageStr-awarded byInvitation-false ember-view"><td class="no-wrap" title="2025-11-20 09:00:48.320">
+            11/20/2025
+        </td>
+
+        <td class="title no-wrap ellipsis" title="Consultant Services Contract for Owner Controlled Insurance Program (OCIP) Ombudsperson">
+            Consultant Services Contract for Owner Controlled Insurance Program (OCIP) Ombudsperson
+                  </td>
+
+        <td class="invitationNum no-wrap ellipsis" title="PS-25-02-RFQP">
+            PS-25-02-RFQP
+                  </td>
+
+        <td class="no-wrap" title="12/19/2025 2:00 PM (PDT)">
+            12/19/2025 02:00pm
+        </td>
+
+      <td data-itemid="135606" tabindex="0" title="" id="ember111" class="no-wrap bid-datetime-countdown ember-view">  <span datavalue="" id="ember112" class="datetime-countdown color-text no-time-remaining ember-view"></span>
+</td>
+
+        <td class="stageStr no-wrap" title="Awarded">
+            Awarded
+                  </td>
+
+        <td class="no-wrap" title="Electronic">
+            Electronic
+                  </td>
+</tr><tr tabindex="0" rowattribute="135407" role="row" id="ember113" class="row-highlight  stageStr-closed byInvitation-false ember-view"><td class="no-wrap" title="2025-11-06 13:27:44.610">
+            11/06/2025
+        </td>
+
+        <td class="title no-wrap ellipsis" title="RFQ - Pre-Qualified Service Provider for Construction Services">
+            RFQ - Pre-Qualified Service Provider for Construction Services
+                  </td>
+
+        <td class="invitationNum no-wrap ellipsis" title="DW-25-11-RFQ">
+            DW-25-11-RFQ
+                  </td>
+
+        <td class="no-wrap" title="12/18/2025 2:00 PM (PDT)">
+            12/18/2025 02:00pm
+        </td>
+
+      <td data-itemid="135407" tabindex="0" title="" id="ember114" class="no-wrap bid-datetime-countdown ember-view">  <span datavalue="" id="ember115" class="datetime-countdown color-text no-time-remaining ember-view"></span>
+</td>
+
+        <td class="stageStr no-wrap" title="Closed">
+            Closed
+                  </td>
+
+        <td class="no-wrap" title="Electronic">
+            Electronic
+                  </td>
+</tr><tr tabindex="0" rowattribute="135471" role="row" id="ember116" class="row-highlight  stageStr-canceled byInvitation-false ember-view"><td class="no-wrap" title="2025-11-07 15:07:58.497">
+            11/07/2025
+        </td>
+
+        <td class="title no-wrap ellipsis" title="RFQ - LAHC Access Control System">
+            RFQ - LAHC Access Control System
+                  </td>
+
+        <td class="invitationNum no-wrap ellipsis" title="CS-25-08-H">
+            CS-25-08-H
+                  </td>
+
+        <td class="no-wrap" title="12/15/2025 2:00 PM (PDT)">
+            12/15/2025 02:00pm
+        </td>
+
+      <td data-itemid="135471" tabindex="0" title="" id="ember117" class="no-wrap bid-datetime-countdown ember-view">  <span datavalue="" id="ember118" class="datetime-countdown color-text no-time-remaining ember-view"></span>
+</td>
+
+        <td class="stageStr no-wrap" title="Canceled">
+            Canceled
+                  </td>
+
+        <td class="no-wrap" title="Electronic">
+            Electronic
+                  </td>
+</tr><tr tabindex="0" rowattribute="135085" role="row" id="ember119" class="row-highlight  stageStr-closed byInvitation-false ember-view"><td class="no-wrap" title="2025-10-23 17:09:28.273">
+            10/23/2025
+        </td>
+
+        <td class="title no-wrap ellipsis" title="LAHC - Marquee Sign Upgrade">
+            LAHC - Marquee Sign Upgrade
+                  </td>
+
+        <td class="invitationNum no-wrap ellipsis" title="CS-25-13-H">
+            CS-25-13-H
+                  </td>
+
+        <td class="no-wrap" title="12/01/2025 2:00 PM (PDT)">
+            12/01/2025 02:00pm
+        </td>
+
+      <td data-itemid="135085" tabindex="0" title="" id="ember120" class="no-wrap bid-datetime-countdown ember-view">  <span datavalue="" id="ember121" class="datetime-countdown color-text no-time-remaining ember-view"></span>
+</td>
+
+        <td class="stageStr no-wrap" title="Closed">
+            Closed
+                  </td>
+
+        <td class="no-wrap" title="Electronic">
+            Electronic
+                  </td>
+</tr><tr tabindex="0" rowattribute="134926" role="row" id="ember122" class="row-highlight  stageStr-awarded byInvitation-false ember-view"><td class="no-wrap" title="2025-10-30 09:00:19.720">
+            10/30/2025
+        </td>
+
+        <td class="title no-wrap ellipsis" title="Task Order Contract for Owner Controlled Insurance Program (OCIP) Broker Administration">
+            Task Order Contract for Owner Controlled Insurance Program (OCIP) Broker Administration
+                  </td>
+
+        <td class="invitationNum no-wrap ellipsis" title="PS-25-01-RFQP">
+            PS-25-01-RFQP
+                  </td>
+
+        <td class="no-wrap" title="11/21/2025 2:00 PM (PDT)">
+            11/21/2025 02:00pm
+        </td>
+
+      <td data-itemid="134926" tabindex="0" title="" id="ember123" class="no-wrap bid-datetime-countdown ember-view">  <span datavalue="" id="ember124" class="datetime-countdown color-text no-time-remaining ember-view"></span>
+</td>
+
+        <td class="stageStr no-wrap" title="Awarded">
+            Awarded
+                  </td>
+
+        <td class="no-wrap" title="Electronic">
+            Electronic
+                  </td>
+</tr><tr tabindex="0" rowattribute="134200" role="row" id="ember125" class="row-highlight  stageStr-closed byInvitation-false ember-view"><td class="no-wrap" title="2025-09-26 12:00:59.213">
+            09/26/2025
+        </td>
+
+        <td class="title no-wrap ellipsis" title="RFQ - LASC - Central Plant Improvements - Phase 2,  Infrastructure - Campus-Wide Hydronic Lines Replacement">
+            RFQ - LASC - Central Plant Improvements - Phase 2,  Infrastructure - Campus-Wide Hydronic Lines Replacement
+                  </td>
+
+        <td class="invitationNum no-wrap ellipsis" title="CS-25-12-S">
+            CS-25-12-S
+                  </td>
+
+        <td class="no-wrap" title="11/07/2025 2:00 PM (PDT)">
+            11/07/2025 02:00pm
+        </td>
+
+      <td data-itemid="134200" tabindex="0" title="" id="ember126" class="no-wrap bid-datetime-countdown ember-view">  <span datavalue="" id="ember127" class="datetime-countdown color-text no-time-remaining ember-view"></span>
+</td>
+
+        <td class="stageStr no-wrap" title="Closed">
+            Closed
+                  </td>
+
+        <td class="no-wrap" title="Electronic">
+            Electronic
+                  </td>
+</tr></tbody></table><div class="infinity-loader" data-test-infinity-loader="">
+              <div class="loading-spinner"><span class="fas fa-sync-alt spinning"></span></div>
+
+  </div>
+  </div>
+</div>
+</div>
+
+</div>
+
+  <div id="ember10" class="ember-view"><footer><div class="col-xs-12 col-sm-12">
+    <div class="pb-copyright">
+      <img src="/img/pbLogoLight.svg" class="pb-copyright-logo" aria-hidden="true" width="96.42" height="20"><span>Copyright ©
+        2026
+      </span>
+      
+    </div>
+
+    <div class="legal pull-right footer-mobile">
+      <div class="footer-dropup">
+        <button aria-label="Toggle menu" title="Toggle menu" id="ember11" class="reactive-button burger-button ember-view" type="button">  <div class="button-wrapper">
+    <div class="button-layer top">
+    </div>
+    <div class="button-layer middle">
+    </div>
+    <div class="button-layer bottom">
+    </div>
+  </div>
+</button>
+      </div>
+    </div>
+
+    <div class="legal pull-right footer-desktop">
+      <ul class="pb-horizontal-list"><li>
+          <a class="footer-link" href="https://vendorline.planetbids.com/home?utm_source=vendorportal&amp;utm_medium=crossproduct&amp;utm=vendorline_promo&amp;agencyId=21372" target="_blank" rel="noreferrer noopener">
+            VendorLine <span class="screen-reader-only">(opens in a new tab)</span>
+          </a>
+        </li>
+        <li>
+          <a aria-label="Toggle Color Scheme" class="link-btn footer-button " href="#" type="button">
+              Dark Mode
+          </a>
+        </li>
+        <li>
+          <a class="footer-link" target="_blank" href="https://home.planetbids.com/privacy-policy" rel="noreferrer noopener">
+            Privacy Policy 
+            <span class="screen-reader-only">(opens in a new tab)</span>
+          </a>
+        </li>
+        <li>
+          <a class="footer-link" target="_blank" href="https://home.planetbids.com/terms-and-conditions" rel="noreferrer noopener">
+            Terms &amp; Conditions 
+            <span class="screen-reader-only">(opens in a new tab)</span>
+          </a>
+        </li>
+        <li>
+          <a class="footer-link" target="_blank" href="https://home.planetbids.com/accessibility-statement" rel="noreferrer noopener">
+            Accessibility 
+            <span class="screen-reader-only">(opens in a new tab)</span>
+          </a>
+        </li>
+      </ul></div>
+  </div>
+</footer></div>
+
+
+<div id="ember12" class="ember-notify-cn ember-notify-default ember-view"></div>
+
+<div class="flatpickr-calendar animate" tabindex="-1"><div class="flatpickr-months"><span class="flatpickr-prev-month"><svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewbox="0 0 17 17"><g></g><path d="M5.207 8.471l7.146 7.147-0.707 0.707-7.853-7.854 7.854-7.853 0.707 0.707-7.147 7.146z"></path></svg></span><div class="flatpickr-month"><div class="flatpickr-current-month"><select class="flatpickr-monthDropdown-months" aria-label="Month" tabindex="-1"><option class="flatpickr-monthDropdown-month" value="0" tabindex="-1">January</option><option class="flatpickr-monthDropdown-month" value="1" tabindex="-1">February</option><option class="flatpickr-monthDropdown-month" value="2" tabindex="-1">March</option><option class="flatpickr-monthDropdown-month" value="3" tabindex="-1">April</option><option class="flatpickr-monthDropdown-month" value="4" tabindex="-1">May</option><option class="flatpickr-monthDropdown-month" value="5" tabindex="-1">June</option><option class="flatpickr-monthDropdown-month" value="6" tabindex="-1">July</option><option class="flatpickr-monthDropdown-month" value="7" tabindex="-1">August</option><option class="flatpickr-monthDropdown-month" value="8" tabindex="-1">September</option><option class="flatpickr-monthDropdown-month" value="9" tabindex="-1">October</option><option class="flatpickr-monthDropdown-month" value="10" tabindex="-1">November</option><option class="flatpickr-monthDropdown-month" value="11" tabindex="-1">December</option></select><div class="numInputWrapper"><input class="numInput cur-year" type="number" tabindex="-1" aria-label="Year" min="1971" max="2149"><span class="arrowUp"></span><span class="arrowDown"></span></div></div></div><span class="flatpickr-next-month"><svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewbox="0 0 17 17"><g></g><path d="M13.207 8.472l-7.854 7.854-0.707-0.707 7.146-7.146-7.146-7.148 0.707-0.707 7.854 7.854z"></path></svg></span></div><div class="flatpickr-innerContainer"><div class="flatpickr-rContainer"><div class="flatpickr-weekdays"><div class="flatpickr-weekdaycontainer">
+      <span class="flatpickr-weekday">
+        Sun</span><span class="flatpickr-weekday">Mon</span><span class="flatpickr-weekday">Tue</span><span class="flatpickr-weekday">Wed</span><span class="flatpickr-weekday">Thu</span><span class="flatpickr-weekday">Fri</span><span class="flatpickr-weekday">Sat
+      </span>
+      </div></div><div class="flatpickr-days" tabindex="-1"><div class="dayContainer"><span class="flatpickr-day prevMonthDay" aria-label="" tabindex="-1">26</span><span class="flatpickr-day prevMonthDay" aria-label="" tabindex="-1">27</span><span class="flatpickr-day prevMonthDay" aria-label="" tabindex="-1">28</span><span class="flatpickr-day prevMonthDay" aria-label="" tabindex="-1">29</span><span class="flatpickr-day prevMonthDay" aria-label="" tabindex="-1">30</span><span class="flatpickr-day prevMonthDay" aria-label="" tabindex="-1">31</span><span class="flatpickr-day" aria-label="" tabindex="-1">1</span><span class="flatpickr-day" aria-label="" tabindex="-1">2</span><span class="flatpickr-day today selected" aria-label="" aria-current="date" tabindex="-1">3</span><span class="flatpickr-day" aria-label="" tabindex="-1">4</span><span class="flatpickr-day" aria-label="" tabindex="-1">5</span><span class="flatpickr-day" aria-label="" tabindex="-1">6</span><span class="flatpickr-day" aria-label="" tabindex="-1">7</span><span class="flatpickr-day" aria-label="" tabindex="-1">8</span><span class="flatpickr-day" aria-label="" tabindex="-1">9</span><span class="flatpickr-day" aria-label="" tabindex="-1">10</span><span class="flatpickr-day" aria-label="" tabindex="-1">11</span><span class="flatpickr-day" aria-label="" tabindex="-1">12</span><span class="flatpickr-day" aria-label="" tabindex="-1">13</span><span class="flatpickr-day" aria-label="" tabindex="-1">14</span><span class="flatpickr-day" aria-label="" tabindex="-1">15</span><span class="flatpickr-day" aria-label="" tabindex="-1">16</span><span class="flatpickr-day" aria-label="" tabindex="-1">17</span><span class="flatpickr-day" aria-label="" tabindex="-1">18</span><span class="flatpickr-day" aria-label="" tabindex="-1">19</span><span class="flatpickr-day" aria-label="" tabindex="-1">20</span><span class="flatpickr-day" aria-label="" tabindex="-1">21</span><span class="flatpickr-day" aria-label="" tabindex="-1">22</span><span class="flatpickr-day" aria-label="" tabindex="-1">23</span><span class="flatpickr-day" aria-label="" tabindex="-1">24</span><span class="flatpickr-day" aria-label="" tabindex="-1">25</span><span class="flatpickr-day" aria-label="" tabindex="-1">26</span><span class="flatpickr-day" aria-label="" tabindex="-1">27</span><span class="flatpickr-day" aria-label="" tabindex="-1">28</span><span class="flatpickr-day" aria-label="" tabindex="-1">29</span><span class="flatpickr-day" aria-label="" tabindex="-1">30</span><span class="flatpickr-day" aria-label="" tabindex="-1">31</span><span class="flatpickr-day nextMonthDay" aria-label="" tabindex="-1">1</span><span class="flatpickr-day nextMonthDay" aria-label="" tabindex="-1">2</span><span class="flatpickr-day nextMonthDay" aria-label="" tabindex="-1">3</span><span class="flatpickr-day nextMonthDay" aria-label="" tabindex="-1">4</span><span class="flatpickr-day nextMonthDay" aria-label="" tabindex="-1">5</span></div></div></div></div></div><div class="flatpickr-calendar animate" tabindex="-1"><div class="flatpickr-months"><span class="flatpickr-prev-month"><svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewbox="0 0 17 17"><g></g><path d="M5.207 8.471l7.146 7.147-0.707 0.707-7.853-7.854 7.854-7.853 0.707 0.707-7.147 7.146z"></path></svg></span><div class="flatpickr-month"><div class="flatpickr-current-month"><select class="flatpickr-monthDropdown-months" aria-label="Month" tabindex="-1"><option class="flatpickr-monthDropdown-month" value="0" tabindex="-1">January</option><option class="flatpickr-monthDropdown-month" value="1" tabindex="-1">February</option><option class="flatpickr-monthDropdown-month" value="2" tabindex="-1">March</option><option class="flatpickr-monthDropdown-month" value="3" tabindex="-1">April</option><option class="flatpickr-monthDropdown-month" value="4" tabindex="-1">May</option><option class="flatpickr-monthDropdown-month" value="5" tabindex="-1">June</option><option class="flatpickr-monthDropdown-month" value="6" tabindex="-1">July</option><option class="flatpickr-monthDropdown-month" value="7" tabindex="-1">August</option><option class="flatpickr-monthDropdown-month" value="8" tabindex="-1">September</option><option class="flatpickr-monthDropdown-month" value="9" tabindex="-1">October</option><option class="flatpickr-monthDropdown-month" value="10" tabindex="-1">November</option><option class="flatpickr-monthDropdown-month" value="11" tabindex="-1">December</option></select><div class="numInputWrapper"><input class="numInput cur-year" type="number" tabindex="-1" aria-label="Year" min="1971" max="2149"><span class="arrowUp"></span><span class="arrowDown"></span></div></div></div><span class="flatpickr-next-month"><svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewbox="0 0 17 17"><g></g><path d="M13.207 8.472l-7.854 7.854-0.707-0.707 7.146-7.146-7.146-7.148 0.707-0.707 7.854 7.854z"></path></svg></span></div><div class="flatpickr-innerContainer"><div class="flatpickr-rContainer"><div class="flatpickr-weekdays"><div class="flatpickr-weekdaycontainer">
+      <span class="flatpickr-weekday">
+        Sun</span><span class="flatpickr-weekday">Mon</span><span class="flatpickr-weekday">Tue</span><span class="flatpickr-weekday">Wed</span><span class="flatpickr-weekday">Thu</span><span class="flatpickr-weekday">Fri</span><span class="flatpickr-weekday">Sat
+      </span>
+      </div></div><div class="flatpickr-days" tabindex="-1"><div class="dayContainer"><span class="flatpickr-day prevMonthDay" aria-label="" tabindex="-1">26</span><span class="flatpickr-day prevMonthDay" aria-label="" tabindex="-1">27</span><span class="flatpickr-day prevMonthDay" aria-label="" tabindex="-1">28</span><span class="flatpickr-day prevMonthDay" aria-label="" tabindex="-1">29</span><span class="flatpickr-day prevMonthDay" aria-label="" tabindex="-1">30</span><span class="flatpickr-day prevMonthDay" aria-label="" tabindex="-1">31</span><span class="flatpickr-day" aria-label="" tabindex="-1">1</span><span class="flatpickr-day" aria-label="" tabindex="-1">2</span><span class="flatpickr-day today selected" aria-label="" aria-current="date" tabindex="-1">3</span><span class="flatpickr-day" aria-label="" tabindex="-1">4</span><span class="flatpickr-day" aria-label="" tabindex="-1">5</span><span class="flatpickr-day" aria-label="" tabindex="-1">6</span><span class="flatpickr-day" aria-label="" tabindex="-1">7</span><span class="flatpickr-day" aria-label="" tabindex="-1">8</span><span class="flatpickr-day" aria-label="" tabindex="-1">9</span><span class="flatpickr-day" aria-label="" tabindex="-1">10</span><span class="flatpickr-day" aria-label="" tabindex="-1">11</span><span class="flatpickr-day" aria-label="" tabindex="-1">12</span><span class="flatpickr-day" aria-label="" tabindex="-1">13</span><span class="flatpickr-day" aria-label="" tabindex="-1">14</span><span class="flatpickr-day" aria-label="" tabindex="-1">15</span><span class="flatpickr-day" aria-label="" tabindex="-1">16</span><span class="flatpickr-day" aria-label="" tabindex="-1">17</span><span class="flatpickr-day" aria-label="" tabindex="-1">18</span><span class="flatpickr-day" aria-label="" tabindex="-1">19</span><span class="flatpickr-day" aria-label="" tabindex="-1">20</span><span class="flatpickr-day" aria-label="" tabindex="-1">21</span><span class="flatpickr-day" aria-label="" tabindex="-1">22</span><span class="flatpickr-day" aria-label="" tabindex="-1">23</span><span class="flatpickr-day" aria-label="" tabindex="-1">24</span><span class="flatpickr-day" aria-label="" tabindex="-1">25</span><span class="flatpickr-day" aria-label="" tabindex="-1">26</span><span class="flatpickr-day" aria-label="" tabindex="-1">27</span><span class="flatpickr-day" aria-label="" tabindex="-1">28</span><span class="flatpickr-day" aria-label="" tabindex="-1">29</span><span class="flatpickr-day" aria-label="" tabindex="-1">30</span><span class="flatpickr-day" aria-label="" tabindex="-1">31</span><span class="flatpickr-day nextMonthDay" aria-label="" tabindex="-1">1</span><span class="flatpickr-day nextMonthDay" aria-label="" tabindex="-1">2</span><span class="flatpickr-day nextMonthDay" aria-label="" tabindex="-1">3</span><span class="flatpickr-day nextMonthDay" aria-label="" tabindex="-1">4</span><span class="flatpickr-day nextMonthDay" aria-label="" tabindex="-1">5</span></div></div></div></div></div></body></html>

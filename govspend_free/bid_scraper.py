@@ -39,6 +39,10 @@ def scrape_bid_board(source: dict, session, seen: set[str], matchers) -> tuple[l
         from . import feeds
         return feeds.scrape_feed_source(source, session, seen, matchers)
 
+    if source.get("type") == "planetbids":
+        from . import planetbids
+        return planetbids.scrape_planetbids_portal(source, session, seen, matchers)
+
     url = source["url"]
     new_matches: list[dict] = []
 
