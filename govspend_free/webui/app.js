@@ -37,7 +37,10 @@
     moon: '<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>'
   };
   function Icon(props) {
-    return html`<svg class=${props.class || ""} viewBox="0 0 24 24" fill="none" stroke="currentColor"
+    // width/height + the .ico class give every icon an intrinsic size so a bare
+    // <svg> can't balloon to fill a flex parent; context CSS (.tab svg, etc.)
+    // still overrides the size where needed.
+    return html`<svg class=${"ico " + (props.class || "")} width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
       stroke-width="2" stroke-linecap="round" stroke-linejoin="round" innerHTML=${ICONS[props.name] || ICONS.doc}></svg>`;
   }
   var TABS = [

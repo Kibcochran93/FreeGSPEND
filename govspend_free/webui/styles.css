@@ -109,6 +109,10 @@
 }
 
 * { box-sizing: border-box; }
+/* Icons: fixed intrinsic size, never stretch to fill a flex parent. Context
+   rules (.tab svg, .stat-card .k svg, .iconbtn svg) override the size. */
+svg.ico { width: 18px; height: 18px; flex: none; }
+.callout > svg.ico { width: 20px; height: 20px; color: var(--accent); }
 html, body { height: 100%; }
 body {
   margin: 0;
