@@ -275,9 +275,16 @@ def classify_rendered(family: str, pid: str, fetch) -> dict:
 
 
 def run_path_family(family: str, session=None, seed_ids: list[str] | None = None,
-                    limit: int = 200) -> list[dict]:
-    """Enumerate (Common Crawl) + render-classify a path-based family. Reuses ONE
-    browser across all portals (render.browser_session), so a batch is ~5s/portal."""
+                    limit: int = 200, chunk: int = 10, delay: float = 0.3,
+                    chunk_cooldown: float = 45.0) -> list[dict]:
+    """Enumerate (Wayback/CC) + render-classify a path-based family.
+
+    Renders in CHUNKS with a COOLDOWN between them. PlanetBids (and similar) rate-
+    limit by IP: after ~11-13 rapid page loads they start returning empty shells,
+    and a fresh browser alone doesn't reset it (the limit is per-IP/time-window).
+    So each chunk gets a fresh browser AND we sleep `chunk_cooldown`s between
+    chunks to let the window reset - the price of a complete, un-throttled sweep.
+    A full sweep is therefore slow (tens of minutes); run it in the background."""
     from . import render
     fam = _PATH_FAMILIES[family]
     session = session or utils.get_session()
@@ -289,12 +296,21 @@ def run_path_family(family: str, session=None, seed_ids: list[str] | None = None
         log.warning('  [discover] %s discovery needs the render layer - '
                     'pip install "scrapling[fetchers]"', family)
         return []
-    log.info("  [discover] rendering + classifying %d %s portal(s) - slow (~5s each)...",
-             len(ids), family)
+    log.info("  [discover] rendering + classifying %d %s portal(s) in chunks of %d - slow...",
+             len(ids), family, chunk)
     rows: list[dict] = []
-    with render.browser_session(stealth=fam["stealth"]) as fetch:
-        for pid in ids:
-            rows.append(classify_rendered(family, pid, fetch))
+    step = max(1, chunk)
+    for start in range(0, len(ids), step):
+        batch = ids[start:start + step]
+        with render.browser_session(stealth=fam["stealth"]) as fetch:  # fresh browser per chunk
+            for pid in batch:
+                rows.append(classify_rendered(family, pid, fetch))
+                if delay:
+                    time.sleep(delay)
+        done = min(start + step, len(ids))
+        log.info("  [discover] ...%d/%d classified", done, len(ids))
+        if chunk_cooldown and done < len(ids):
+            time.sleep(chunk_cooldown)   # let the per-IP rate-limit window reset
     return rows
 
 

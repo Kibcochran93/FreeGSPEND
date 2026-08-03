@@ -182,6 +182,8 @@ california:
       bid_boards: [{type: planetbids, url: "https://vendors.planetbids.com/portal/22758/bo/bo-search"}]
     - name: "Taft College (West Kern CCD)"
       bid_boards: [{type: planetbids, url: "https://vendors.planetbids.com/portal/66036/bo/bo-search"}]
+    - name: "Santa Monica College"   # found by --discover planetbids (auto-discovery)
+      bid_boards: [{type: planetbids, url: "https://vendors.planetbids.com/portal/13721/bo/bo-search"}]
   transparency:
     - name: "California FI$Cal Open Data"
       url: "https://open.fiscal.ca.gov/"
