@@ -149,6 +149,21 @@ california:
         # PlanetBids (Ember JS SPA) - rendered via scrapling on --browser. Verified live
         # 2026-08-03 (134 bids). PlanetBids hosts most CA community-college districts.
         - {type: planetbids, url: "https://vendors.planetbids.com/portal/21372/bo/bo-search"}
+    # More CA community-college PlanetBids portals (type: planetbids; rendered via
+    # scrapling on --browser). Every portal ID below was verified live 2026-08-03 by
+    # rendering it and reading the institution name off the page.
+    - name: "San Diego Community College District"
+      bid_boards: [{type: planetbids, url: "https://vendors.planetbids.com/portal/57760/bo/bo-search"}]
+    - name: "Peralta Community College District"
+      bid_boards: [{type: planetbids, url: "https://vendors.planetbids.com/portal/71895/bo/bo-search"}]
+    - name: "Contra Costa Community College District"
+      bid_boards: [{type: planetbids, url: "https://vendors.planetbids.com/portal/67229/bo/bo-search"}]
+    - name: "Foothill-De Anza Community College District"
+      bid_boards: [{type: planetbids, url: "https://vendors.planetbids.com/portal/24809/bo/bo-search"}]
+    - name: "Coast Community College District"
+      bid_boards: [{type: planetbids, url: "https://vendors.planetbids.com/portal/36722/bo/bo-search"}]
+    - name: "San Mateo County Community College District"
+      bid_boards: [{type: planetbids, url: "https://vendors.planetbids.com/portal/20507/bo/bo-search"}]
   transparency:
     - name: "California FI$Cal Open Data"
       url: "https://open.fiscal.ca.gov/"
